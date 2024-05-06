@@ -1,0 +1,27 @@
+{%  load static %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Molecule ID and Isotopologue ID</title>
+</head>
+<body>
+
+<h1>Molecule ID {{ molID }}</h1>
+
+{% for item in list_data %}
+    <li>{{ item }} -- {{ forloop.counter }} ++ {{ forloop.counter0 }}</li>
+    {% if forloop.first %}
+        this is first
+    {% elif forloop.last %}
+        this is last
+    {% endif %}
+    {% empty %}
+        empty list
+{% endfor %}
+
+<img src="{% static 'images/favicon.ico' %}">
+
+
+</body>
+</html>

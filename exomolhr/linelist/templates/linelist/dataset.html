@@ -1,0 +1,243 @@
+{% load static %}
+
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>ExoMolHR</title>
+
+    <link rel="stylesheet" href="https://cdn.datatables.net/2.0.3/css/dataTables.dataTables.css"/>  
+    <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/4.0.0/css/bootstrap.min.css" integrity="sha384-Gn5384xqQ1aoWXA+058RXPxPg6fy4IWvTNh0E263XmFcJlSAwiGgFAW/dAiS6JXm" crossorigin="anonymous">
+    
+    <script src="https://cdn.staticfile.net/jquery/3.2.1/jquery.min.js"></script>
+    <script src="https://cdn.staticfile.net/popper.js/1.15.0/umd/popper.min.js"></script>
+    <script src="https://cdn.staticfile.net/twitter-bootstrap/4.3.1/js/bootstrap.min.js"></script>
+    
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Croissant+One&family=Josefin+Sans:wght@500&family=Yatra+One&display=swap">
+
+    <link rel="stylesheet" type="text/css" href="{% static 'molecule.css' %}"/> 
+
+    <style>
+        /* Table styles */
+        .table-fixhead {
+            max-height: 630px; /* Adjust the max height of the table as needed */
+            overflow-y: auto;
+            position: relative; /* Add position relative to set reference point for absolute positioning */
+        }
+        table {
+            border-collapse: collapse;
+            border-spacing: 0;
+        }
+        th, td{
+            padding: 8px;
+            text-align: left;
+            border-bottom: 1px solid #ddd;
+        }
+        th {
+            position: sticky;
+            top: 0;
+            background-color: rgb(38, 77, 109);
+            z-index: 1;
+            color: white; /* Set the font color to white */
+        }
+        #dataTable {
+            position: relative;
+        }
+        #dataTable thead {
+            position: sticky;
+            top: 0;
+            z-index: 1;
+        } 
+        tbody {
+            position: relative;
+        }
+        tr {
+            position: sticky;
+            top: 0px; /* Adjust this value to match the height of your header */
+        }
+        .highlight {
+            background-color: #add5a2;
+            opacity: 0.7;
+        }
+
+    </style>
+
+</head>
+
+
+<div style="text-align:center">
+<body>
+
+
+<div class="card text-center">
+
+
+    <div class="card mb-3">
+        <div>
+            <img src="http://www.rocketstem.org/wp-content/uploads/2015/04/018_ngc1300.jpg" class="card-img-top;rounded-pill" alt="" style="width:100%;height:15rem;object-fit:cover">
+            <p class="card-text" style="position:absolute;top:50px;left:10px;font-family:'Josefin Sans';font-size:60px;color:#dee2e6">ExoMolHR</p>
+            <p class="card-text" style="position:absolute;top:140px;left:12px;font-family:'Josefin Sans';font-size:24px;color:#dee2e6">High Resolution Database</p>
+            <p class="card-text" style="position:absolute;top:220px;right:10px;font-family:'Josefin Sans';font-size:8px;color:#dee2e6">@NASA, ESA, and The Hubble Heritage Team STScI/AURA</p>
+        </div>
+
+        <div class="card-header">
+            <ul class="nav nav-tabs card-header-tabs navbar-expand-sm">
+                <li class="nav-item">
+                    <a class="nav-link" href="{% url 'home' %}">Home</a>
+                </li>
+                <!-- Dropdown -->
+                <li class="nav-item dropdown">
+                    <a class="nav-link dropdown-toggle" href="#" id="navbardrop" data-toggle="dropdown">
+                    Database
+                    </a>
+                    <div class="dropdown-menu">
+                    <a class="dropdown-item" href="/linelist">Line list</a>
+                    <a class="dropdown-item" href="/calculate">Calculate</a>
+                    </div>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link" href="/linelist/{{ molf }}">Molecule {{ molh|safe }}</a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link active" aria-current="true" href="/linelist/{{ molf }}/{{ isos }}">Isotopologue {{ isoh|safe }}</a>
+                </li>
+                <li class="nav-item ml-auto">
+                    <a class="nav-link" href="{% url 'about' %}">About</a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link" href="{% url 'contact' %}">Contact</a>
+                </li>
+            </ul>
+        </div>
+        
+        <div class="card-body">
+            <h1 class="card-title" style="font-family:'Josefin Sans'">ExoMolHR Database</h1>
+            <h3 class="card-title" style="font-family:'Josefin Sans'">Datasets</h1>
+            <p class="card-text" style="font-family:'Josefin Sans';font-size:20px">Molecule {{ molh|safe }}</p>
+            <p class="card-text" style="font-family:'Josefin Sans';font-size:20px">Isotopologue {{ isoh|safe }}</p>
+            <p class="card-text" style="font-family:'Josefin Sans';font-size:20px">Step 3: Choose one dataset</p>
+        </div>
+
+        <!--
+        <div class="container text-center">
+            <form class="form-inline">
+                <div class="form-group mx-auto">
+                    <input type="search" class="form-control mx-sm-3 mb-2" placeholder="Search Dataset">
+                    <button type="submit" class="form-control mb-2 btn btn-outline-success">Search</button>
+                    <button type="submit" class="form-control mx-sm-3 mb-2 btn btn-primary">Submit</button>
+                </div>
+                
+            </form>
+        </div>
+        -->
+
+        <div style="display:flex;justify-content: center;">
+            <div style="display:flex;flex-direction:column;">
+                <div class="form-group mx-auto form-inline" style="justify-content:center;">
+                    <input type="search" id="datasetSearchInput" class="form-control mx-sm-3 mb-2" style="width: 188px;" placeholder="Search Isotopologue">
+                    <button type="button" id="datasetSearchButton" class="form-control mb-2 btn btn-outline-success">Search</button>
+                </div>
+                <div class="form-group mx-auto form-inline" style="justify-content:center;">
+                    <input type="search" id="datasetNameSearchInput" class="form-control mx-sm-3 mb-2" style="width: 188px;" placeholder="Search Dataset Name">
+                    <button type="button" id="datasetNameSearchButton" class="form-control mb-2 btn btn-outline-success">Search</button>
+                </div>
+            </div>
+        </div> 
+
+
+    </div>
+
+    <div class="row justify-content-center table-responsive table-fixhead">
+        <table class="table table-bordered table-hover align-middle mx-auto" id="dataTable" style="font-family:'Josefin Sans';width:auto;margin:auto;font-size:18px;background-color:rgba(255,255,255,0.2)">
+            <thead>
+                <tr>
+                    <th rowspan=$rowspan style="vertical-align:middle;text-align:center">ID</th>
+                    <th rowspan=$rowspan style="vertical-align:middle;text-align:center">Isotopologue</th>
+                    <th rowspan=$rowspan style="vertical-align:middle;text-align:center">Iso-Slug</th>
+                    <th rowspan=$rowspan style="vertical-align:middle;text-align:center">Isotopologue Formula</th>
+                    <th rowspan=$rowspan style="vertical-align:middle;text-align:center">Isotopologue Mass (Da)</th>
+                    <th rowspan=$rowspan style="vertical-align:middle;text-align:center">Dataset</th>
+                    <th rowspan=$rowspan style="vertical-align:middle;text-align:center">Choose Dataset</th>
+                </tr>
+            </thead>
+
+            <tbody>
+                {% for row in rows %}
+                <tr>
+                    <td rowspan=$rowspan style="vertical-align:middle;text-align:center">{{ row.id|stringformat:".3g" }}</td>
+                    <td rowspan=$rowspan style="vertical-align:middle;text-align:center">{{ row.isohtml|safe }}</td>
+                    <td rowspan=$rowspan style="vertical-align:middle;text-align:center">{{ row.isoslug }}</td>
+                    <td rowspan=$rowspan style="vertical-align:middle;text-align:center">{{ row.isoformula }}</td>
+                    <td rowspan=$rowspan style="vertical-align:middle;text-align:center">{{ row.isomass|stringformat:".6f" }}</td> 
+                    <td rowspan=$rowspan style="vertical-align:middle;text-align:center">{{ row.dataset }}</td> 
+                    <td>
+                        <div class="col-12">
+                            <a href="{{ row.isoslug }}/{{ row.dataset }}"><label class="form-control mb-2 btn btn-outline-info" for="btn-check-outlined">{{ row.dataset }}</label><br>
+                        </div>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+      
+    </div>
+
+    <div class="card-body">
+    </div>  
+
+    <div class="card-footer text-muted">
+        <p class="card-text" style="font-family:'Josefin Sans';font-size:15px;color:#dee2e6">ExoMolHR uses ExoMol data supported by ERC Advanced Investigator Projects 267219 and 883830.</p>
+    </div>
+
+</div>
+
+<script>
+    document.addEventListener("DOMContentLoaded", function() {
+        var datasetSearchInput = document.getElementById("datasetSearchInput");
+        var datasetSearchButton = document.getElementById("datasetSearchButton");
+        var datasetNameSearchInput = document.getElementById("datasetNameSearchInput");
+        var datasetNameSearchButton = document.getElementById("datasetNameSearchButton");
+        var tableBody = document.querySelector("#dataTable tbody");
+        var tableHeader = document.querySelector("#dataTable thead");
+
+        datasetSearchButton.addEventListener("click", function() {
+            var searchText = datasetSearchInput.value.toLowerCase();
+            var tableRows = tableBody.querySelectorAll("tr");
+
+            tableRows.forEach(function(row) {
+                var column2Text = row.querySelector("td:nth-child(2)").textContent.toLowerCase();
+                var column3Text = row.querySelector("td:nth-child(3)").textContent.toLowerCase();
+                var column4Text = row.querySelector("td:nth-child(4)").textContent.toLowerCase();
+                if (column2Text.includes(searchText) || column3Text.includes(searchText) || column4Text.includes(searchText)) {
+                    row.classList.add("highlight");
+                    row.scrollIntoView({ behavior: "smooth", block: "nearest", inline: "start" });
+                } else {
+                    row.classList.remove("highlight");
+                }
+            });
+        });
+
+        datasetNameSearchButton.addEventListener("click", function() {
+            var searchText = datasetNameSearchInput.value.toLowerCase();
+            var tableRows = tableBody.querySelectorAll("tr");
+    
+            tableRows.forEach(function(row) {
+                var datasetName = row.querySelector("td:nth-child(6)").textContent.toLowerCase();
+                if (datasetName.includes(searchText)) {
+                    row.classList.add("highlight");
+                    row.scrollIntoView({ behavior: "smooth", block: "nearest", inline: "start" });
+                } else {
+                    row.classList.remove("highlight");
+                }
+            });
+        });
+    });
+
+</script>
+
+</body>
+</div>
+</html>

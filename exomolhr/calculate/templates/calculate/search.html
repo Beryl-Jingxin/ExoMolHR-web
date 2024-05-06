@@ -1,0 +1,148 @@
+{% extends "theme/base.html" %}
+{% load static humanize %}
+
+{% block extra_js %}
+<script src="https://polyfill.io/v3/polyfill.min.js?features=es6"></script>
+<script id="MathJax-script" async src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
+<script type="text/javascript">
+MathJax.Hub.Config({
+  tex2jax: {
+    inlineMath: [['$','$'], ['\\(','\\)']],
+    processEscapes: true
+  }
+});
+</script>
+<script type="text/javascript" crossorigin="anonymous" src="https://cdn.bokeh.org/bokeh/release/bokeh-2.4.2.min.js"></script>
+
+<script type='text/javascript'>
+$(function () {
+  $('[data-toggle="tooltip"]').tooltip()
+});
+$(document).ready(function(){
+{% if search_results %}
+    window.location = '#search-results';
+{% endif %}
+});
+</script>
+
+{% endblock %}
+
+
+{% block content %}
+<div class="container">
+
+
+
+<form method="get">
+<div class="card card-body search-card">
+<div class="container-fluid">
+
+
+<div class="row">
+<div class="form-group col-md-2 text-right">
+<label for="id_numin">
+<span
+data-toggle="tooltip"
+data-placement="top"
+title='Lower wavenumber bound'>ⓘ</span>
+\(\tilde{\nu}_\mathrm{min}/\mathrm{cm^{-1}}\):</label>
+</div>
+<div class="form-group col-md-4">
+{{ filter.form.numin }}
+</div>
+<div class="form-group col-md-2 text-right">
+<label for="id_numax">
+<span
+data-toggle="tooltip"
+data-placement="top"
+title='Upper wavenumber bound'>ⓘ</span>
+\(\tilde{\nu}_\mathrm{max}/\mathrm{cm^{-1}}\):</label>
+</div>
+<div class="form-group col-md-4">
+{{ filter.form.numax }}
+</div>
+</div>
+
+
+<div class="row">
+<div class="form-group col-md-3 text-right">
+<label for="id_molecule">
+<span
+data-toggle="tooltip"
+data-placement="top"
+title='Molecule formula in PyValem notation'>ⓘ</span>
+Molecule:</label>
+</div>
+<div class="form-group col-md-9">
+{{ filter.form.molecule }}
+</div>
+</div>
+
+<div class="row">
+<div class="form-group col-md-12 text-center">
+    <button type="submit" class="btn btn-primary">Search</button>
+    <a href="{% url 'linelist:search' %}" class="btn btn-outline-primary">Clear</a>
+</div>
+</div>
+
+
+</div>
+</div>
+</form>
+
+
+
+
+
+{% if filtered_trans is not None %}
+<h2 class="text-center" id="search-results">{{ nresults|intcomma }} Result{{ nresults|pluralize }}</h2>
+
+<p class="text-center">Download these data: <a href="{% url 'linelist:search_results_download' %}?{{ querystring }}&format=csv"><button type="button" class="btn btn-success btn-sm">CSV</button></a> <a href="{% url 'linelist:search_results_download' %}?{{ querystring }}&format=json"><button type="button" class="btn btn-success btn-sm">JSON</button></a></p>
+
+<table class="table">
+<thead> <tr>
+<th></th>
+<th>\(\tilde{\nu}\;(\mathrm{cm^{-1}})\)</th>
+<th>\(\mathrm{unc}(\tilde{\nu})\;(\mathrm{cm^{-1}})\)</th>
+<th>\(A\;(\mathrm{s^{-1}})\)</th>
+<th>\(S\;(\mathrm{cm\,molecule^{-1}})\)</th>
+{#<th>\(Molecule\)</th>#}
+{#<th>\(Isotopologue\)</th>#}
+{#<th>\(Dataset\)</th>#}
+<th>\(E''\;(\mathrm{cm^{-1}})\)</th>
+<th>\(g'\)</th>
+<th>\(g''\)</th>
+<th>\(J'\)</th>
+<th>\(J''\)</th>
+<th>\(QN'\)</th>
+<th>\(QN''\)</th>
+</tr> </thead>
+
+{% for trans in filtered_trans %}
+
+<tr>
+<td>{{ trans.isotopologue.html|safe }}</td>
+<td>{{ trans.nu|stringformat:".6g" }}</td>
+<td>{{ trans.unc|stringformat:".6g" }}</td>
+<td>{{ trans.A|stringformat:".4e" }}</td>
+<td>{{ trans.S|stringformat:".6g" }}</td>
+{#<td>{{ trans.mol }}</td>#}
+{#<td>{{ trans.iso }}</td>#}
+{#<td>{{ trans.ds }}</td>#}
+<td>{{ trans.Epp|stringformat:".6g" }}</td>
+<td>{{ trans.gp }}</td>
+<td>{{ trans.gpp }}</td>
+<td>{{ trans.Jp }}</td>
+<td>{{ trans.Jpp }}</td>
+<td>{{ trans.qnp }}</td>
+<td>{{ trans.qnpp }}</td>
+</tr>
+{% endfor %}
+
+</table>
+{% endif %}
+
+</div>
+{% endblock %}
+
+

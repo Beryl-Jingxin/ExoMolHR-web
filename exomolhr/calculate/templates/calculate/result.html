@@ -1,0 +1,63 @@
+{% extends "theme/base.html" %}
+
+{% block extra_js %}
+<script src="https://polyfill.io/v3/polyfill.min.js?features=es6"></script>
+<script id="MathJax-script" async src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
+<script type="text/javascript">
+MathJax.Hub.Config({
+  tex2jax: {
+    inlineMath: [['$','$'], ['\\(','\\)']],
+    processEscapes: true
+  }
+});
+</script>
+<script type="text/javascript" crossorigin="anonymous" src="https://cdn.bokeh.org/bokeh/release/bokeh-2.4.2.min.js"></script>
+{% endblock %}
+
+
+{% block content %}
+<div class="container">
+<p>Search results for nu = {{ numin }} – {{ numax }} \(\mathrm{cm^{-1}}\)</sup>.</p>
+
+<table class="table">
+<thead> <tr>
+<th>\(\tilde{\nu}\;(\mathrm{cm^{-1}})\)</th>
+<th>\(\mathrm{Uncertainty}\)</th>
+<th>\(A\;(\mathrm{s^{-1}})\)</th>
+<th>\(S\;(\mathrm{cm\,molecule^{-1}})\)</th>
+{#<th>\(Molecule\)</th>#}
+{#<th>\(Isotopologue\)</th>#}
+{#<th>\(Dataset\)</th>#}
+<th>\(E''\;(\mathrm{cm^{-1}})\)</th>
+<th>\(g'\)</th>
+<th>\(g''\)</th>
+<th>\(J'\)</th>
+<th>\(J''\)</th>
+<th>\(QN'\)</th>
+<th>\(QN''\)</th>
+</tr> </thead>
+
+{% for trans in lines %}
+
+<tr>
+<td>{{ trans.nu|stringformat:".6g" }}</td>
+<td>{{ trans.unc|stringformat:".6g" }}</td>
+<td>{{ trans.A|stringformat:".4e" }}</td>
+<td>{{ trans.S|stringformat:".6g" }}</td>
+{#<td>{{ trans.mol }}</td>#}
+{#<td>{{ trans.iso }}</td>#}
+{#<td>{{ trans.ds }}</td>#}
+<td>{{ trans.Epp|stringformat:".6g" }}</td>
+<td>{{ trans.gp }}</td>
+<td>{{ trans.gpp }}</td>
+<td>{{ trans.Jp }}</td>
+<td>{{ trans.Jpp }}</td>
+<td>{{ trans.qnp }}</td>
+<td>{{ trans.qnpp }}</td>
+</tr>
+{% endfor %}
+
+</table>
+
+</div>
+{% endblock %}
