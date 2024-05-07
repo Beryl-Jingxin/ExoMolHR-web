@@ -4,6 +4,8 @@ from django.views.generic import View
 from django.urls import reverse
 from django.forms.models import model_to_dict
 
+from django.conf import settings
+
 from .models import Linelists
 from .filters import TransFilters
 # from chem.models import Molecule, Isotopologue
@@ -12,15 +14,11 @@ import os, csv, sqlite3
 import pandas as pd
 
 
-# Create your views here.
-
-# con = sqlite3.connect('/home/jingxin/ExoMolHR-web/exomolhr/db.sqlite3', check_same_thread=False)
-# db = con.cursor()
-pieces_df = pd.read_csv('~/ExoMolHR-web/res/exomolhr.csv', header=0)
+pieces_df = pd.read_csv(settings.EXOMOLHR_CSV_FILE, header=0)
 
 def molecules(request):
     molecules_colnames = ['molid', 'molecule', 'molhtml', 'moltag', 'molname', 'molmass']
-    molecule_df = pd.read_csv('~/ExoMolHR-web/res/molecules.csv', header=0, names=molecules_colnames)
+    molecule_df = pd.read_csv(settings.MOLECULES_CSV_FILE, header=0, names=molecules_colnames)
     context = {
         'columns': molecule_df.columns, 
         'rows': molecule_df.to_dict('records')}   

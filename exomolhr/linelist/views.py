@@ -12,13 +12,14 @@ from .filters import TransFilter
 from pyvalem.formula import Formula
 import os, csv, sqlite3
 import pandas as pd
+from django.conf import settings
 
 
 # Create your views here.
 
-con = sqlite3.connect('/home/jingxin/ExoMolHR-web/exomolhr/db.sqlite3', check_same_thread=False)
-db = con.cursor()
-pieces_df = pd.read_csv('~/ExoMolHR-web/res/exomolhr.csv', header=0)
+#con = sqlite3.connect('/home/jingxin/ExoMolHR-web/exomolhr/db.sqlite3', check_same_thread=False)
+#db = con.cursor()
+pieces_df = pd.read_csv(settings.EXOMOLHR_CSV_FILE, header=0)
 
 
 def Home(request):
@@ -35,7 +36,7 @@ def Contact(request):
 
 def molecule(request):
     molecules_colnames = ['molid', 'molecule', 'molhtml', 'moltag', 'molname', 'molmass']
-    molecule_df = pd.read_csv('~/ExoMolHR-web/res/molecules.csv', header=0, names=molecules_colnames)
+    molecule_df = pd.read_csv(settings.MOLECULES_CSV_FILE, header=0, names=molecules_colnames)
     context = {'columns': molecule_df.columns, 'rows': molecule_df.to_dict('records')}    
     return render(request, 'linelist/molecule.html', context)
     
@@ -79,19 +80,27 @@ def dataset(request, molecule, isotopologue):
     return render(request, 'linelist/dataset.html', context)
 
 
+def get_tip(header_name):
+    if header_name == 'Frequency':
+        header_tip = r"Wavenumber in cm<sup>-1</sup><br/><code>F12.6</code> | <code>12.6%</code>"
+    else:
+        header_tip = "You're on your own"
+    return header_tip
+
 def species(request, molecule, isotopologue, dataset):
     source_link = f"https://www.exomol.com/data/molecules/{molecule}/{isotopologue}/{dataset}/"
     csvinf_df = pieces_df[pieces_df[['molecule', 'isoslug']].isin([molecule, isotopologue, dataset]).all(axis=1)]
     localcsv_filename = csvinf_df['filename'].values[0]
-    localcsv_filepath = '/home/jingxin/data/exomolhr/loc_result/'+localcsv_filename
+    localcsv_filepath = settings.DATA_DIR / f"loc_result/{localcsv_filename}"
     # Read the CSV file into a pandas DataFrame
     csv_df = pd.read_csv(localcsv_filepath, dtype=str).head(200)
-    headers = [col.replace('Sigma','Σ').replace('Lambda','Λ').replace('Omega','Ω') for col in csv_df.columns]
+    header_names = [col.replace('Sigma','Σ').replace('Lambda','Λ').replace('Omega','Ω') for col in csv_df.columns]
+    header_tips = [get_tip(header_name) for header_name in header_names]
     out = csv_df.to_dict('records')
     molhtml = csvinf_df['molhtml'].values[0]
     isohtml = csvinf_df['isohtml'].values[0]
     context = {'data': out, 
-               'headers':headers,
+               'headers': zip(header_names, header_tips),
                'molf': molecule, 
                'molh': molhtml, 
                'isos': isotopologue, 
@@ -106,7 +115,7 @@ def download_localfile(request, molecule, isotopologue, dataset):
     csvinf_df = pieces_df[pieces_df[['molecule', 'isoslug']].isin([molecule, isotopologue, dataset]).all(axis=1)]
     if not csvinf_df.empty:
         localcsv_filename = csvinf_df.iloc[0]['filename']
-        localcsv_filepath = '/home/jingxin/data/exomolhr/loc_result/' + localcsv_filename
+        localcsv_filepath = settings.DATA_DIR / f"loc_result/{localcsv_filename}"
         if os.path.exists(localcsv_filepath):
             with open(localcsv_filepath, 'rb') as file:
                 # Set the content type of the response

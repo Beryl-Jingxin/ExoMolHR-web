@@ -16,21 +16,10 @@ import os
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
 
-
-# Quick-start development settings - unsuitable for production
-# See https://docs.djangoproject.com/en/4.1/howto/deployment/checklist/
-
-# SECURITY WARNING: keep the secret key used in production secret!
-SECRET_KEY = 'django-insecure-@w#6i$5s#ghr5^h#wz9kz@tfncz((o*)*cbm*c4=mrdb&kbg2j'
-
 # SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = True
+DEBUG = False
 
-ALLOWED_HOSTS = ['*']
-# ALLOWED_HOSTS = ['exomol.com']
-# ALLOWED_HOSTS = ['localhost', '127.0.0.1', '.ngrok.io']
-# ALLOWED_HOSTS = ['127.0.0.1', 'localhost','0.0.0.0']
-
+ALLOWED_HOSTS = []
 
 # Application definition
 
@@ -153,3 +142,10 @@ STATIC_URL = 'static/'
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 
 CSRF_COOKIE_SECURE = True
+
+# Import everything from local_settings.py
+PROJECT_APP_PATH = Path(__file__).resolve().parent
+f = PROJECT_APP_PATH / "local_settings.py"
+if f.exists():
+    with open(f, "rb") as fi:
+        exec(fi.read())

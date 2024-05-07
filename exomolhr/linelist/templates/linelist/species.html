@@ -11,10 +11,9 @@
     <link rel="stylesheet" href="https://cdn.datatables.net/2.0.3/css/dataTables.dataTables.css"/>  
     <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/4.0.0/css/bootstrap.min.css" integrity="sha384-Gn5384xqQ1aoWXA+058RXPxPg6fy4IWvTNh0E263XmFcJlSAwiGgFAW/dAiS6JXm" crossorigin="anonymous">
     
-    <script src="https://cdn.staticfile.net/jquery/3.2.1/jquery.min.js"></script>
-    <script src="https://cdn.staticfile.net/popper.js/1.15.0/umd/popper.min.js"></script>
+    <script src="https://cdn.staticfile.net/jquery/3.5.1/jquery.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/popper.js@1.12.9/dist/umd/popper.min.js"></script>
     <script src="https://cdn.staticfile.net/twitter-bootstrap/4.3.1/js/bootstrap.min.js"></script>
-    <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.5.1/jquery.min.js"></script>
     
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -83,8 +82,16 @@
             text-decoration: none; /* Remove underline on hover */
             color:white;
         }   
+        code {color: white!important;}
 
     </style> 
+
+
+<script>
+$(function () {
+  $('[data-toggle="tooltip"]').tooltip()
+})
+</script>
 
 </head>
 
@@ -181,8 +188,8 @@
         <table class="table table-bordered table-hover align-middle mx-auto" id="dataTable" style="width: 90%;">
             <thead>
                 <tr>
-                    {% for header in headers %}
-                    <th>{{ header }}</th>
+                    {% for header_name, header_tip in headers %}
+                    <th data-toggle="tooltip" data-placement="top" data-boundary="window" data-html="true" data-title="{{ header_tip|safe }}">{{ header_name }}</th>
                     {% endfor %}
                 </tr>
             </thead>
