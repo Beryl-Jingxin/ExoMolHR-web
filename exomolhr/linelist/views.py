@@ -91,7 +91,7 @@ def species(request, molecule, isotopologue, dataset):
     source_link = f"https://www.exomol.com/data/molecules/{molecule}/{isotopologue}/{dataset}/"
     csvinf_df = pieces_df[pieces_df[['molecule', 'isoslug']].isin([molecule, isotopologue, dataset]).all(axis=1)]
     localcsv_filename = csvinf_df['filename'].values[0]
-    localcsv_filepath = settings.DATA_DIR / f"loc_result/{localcsv_filename}"
+    localcsv_filepath = settings.LOCAL_CSV_DIR / f"loc_result/{localcsv_filename}"
     # Read the CSV file into a pandas DataFrame
     csv_df = pd.read_csv(localcsv_filepath, dtype=str).head(200)
     header_names = [col.replace('Sigma','Σ').replace('Lambda','Λ').replace('Omega','Ω') for col in csv_df.columns]
