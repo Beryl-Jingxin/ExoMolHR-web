@@ -16,4 +16,4 @@ conf.py
 .venv
 activate
 sandpit
-test.ipynb
+res/test.ipynb

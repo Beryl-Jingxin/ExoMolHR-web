@@ -106,7 +106,7 @@ def get_tip(header_names, localcsv_filename):
     header_details_df = pd.merge(states_col_df, header_names_df, on='label')
     header_details_df['labelname'] = ('Label: ' + header_details_df['labelname'].str
                                     .replace("'", "' for upper state").str.replace('"','" for lower state'))
-    main_tips = ['Label: Frenquency<br/>Description: Wavenumnber in cm<sup>-1</sup><br/>Fortran format | C format<br/><code>F12.6</code> | <code>%12.6f</code>',
+    main_tips = ['Label: Frequency<br/>Description: Wavenumber in cm<sup>-1</sup><br/>Fortran format | C format<br/><code>F12.6</code> | <code>%12.6f</code>',
     'Label: Uncertainty<br/>Description: Description: Energy uncertainty in cm<sup>-1</sup><br/>Fortran format | C format<br/><code>F12.6</code> | <code>%12.6f</code>',
     'Label: A<br/>Description: Einstein A coefficient<br/>Fortran format | C format<br/><code>ES10.4</code> | <code>%10.4E</code>']
     other_tips = (header_details_df['labelname'].astype(str) + '<br/>' + 
