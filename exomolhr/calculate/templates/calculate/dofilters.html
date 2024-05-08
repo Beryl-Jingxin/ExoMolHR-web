@@ -67,8 +67,6 @@
 
 </head>
 
-
-<div style="text-align:center">
 <body>
 
 
@@ -118,7 +116,7 @@
         
         <div class="card-body">
             <h1 class="card-title" style="font-family:'Josefin Sans'">ExoMolHR Database</h1>
-            <h3 class="card-title" style="font-family:'Josefin Sans'">Local CSV</h1>
+            <h3 class="card-title" style="font-family:'Josefin Sans'">Spectrum Filters</h1>
             <p class="card-text" style="font-family:'Josefin Sans';font-size:20px">Molecules {{ moleculeshtml|safe }}</p>
             <p class="card-text" style="font-family:'Josefin Sans';font-size:20px">Isotopologues {{ isotopologueshtml|safe }}</p>
             <p class="card-text" style="font-family:'Josefin Sans';font-size:20px">Datasets {{ datasetshtml|safe }}</p>
@@ -126,32 +124,36 @@
         </div>
     </div>
 
-    <!--  
-    <div class="container text-center">
-        <form id="dofiltersForm" method="post" action="/calculate/{{ molecules_url }}/{{ isotopologues_url }}/{{ datasets_url }}/">
 
-        <div style="display:flex;justify-content: center;">
-            <div style="display:flex;flex-direction:column;">
-                <div class="form-group mx-auto form-inline" style="justify-content:center;">
-                    <input type="search" id="moleculeSearchInput" class="form-control mx-sm-3 mb-2" style="width: 268px;" placeholder="Search Molecule or Isotopologue">
-                    <button type="button" id="moleculeSearchButton" class="form-control mb-2 btn btn-outline-success">Search</button>
-                </div>
-                <div class="form-group mx-auto form-inline" style="justify-content:center;">
-                    <input type="search" id="datasetNameSearchInput" class="form-control mx-sm-3 mb-2" style="width: 268px;" placeholder="Search Dataset Name">
-                    <button type="button" id="datasetNameSearchButton" class="form-control mb-2 btn btn-outline-success">Search</button>
-                </div>
-            </div>
-            <div style="display: flex; justify-content:center;">
-                <button type="submit" class="form-control mx-sm-3 mb-2 btn btn-primary" style="height:100px">Submit</button>
-            </div>
-        </div>  
+        <div class="container text-center">
+            <form id="filterForm" method="GET" action="/calculate/get-data/">
 
-        </form>
-    </div> 
-    -->
-    
+<p>
+<label for="numin">nu-min / cm<sup>-1</sup></label>:
+<input type="text" id="numin" name="numin" value="0"></input>
+</p>
+<p>
+<label for="numax">nu-max / cm<sup>-1</sup></label>:
+<input type="text" id="numax" name="numax"></input>
+</p>
+<p>
+<label for="T">T / K</label>:
+<input type="text" id="T" name="T" value="296" required></input>
+</p>
+
+{% for iso_slug in iso_slugs %}
+<input hidden name="iso" value="{{ iso_slug }}">
+{% endfor %}
+
+            <div class="form-group mx-auto form-inline" style="justify-content:center;">
+                <button type="submit" class="form-control mx-sm-3 mb-2 btn btn-primary">Submit</button>
+            </div> 
+            </form>
+        </div> 
+
     <div class="card-body">
     </div>  
+
 
     <div class="card-footer text-muted">
         <p class="card-text" style="font-family:'Josefin Sans';font-size:15px;color:#dee2e6">ExoMolHR uses ExoMol data supported by ERC Advanced Investigator Projects 267219 and 883830.</p>

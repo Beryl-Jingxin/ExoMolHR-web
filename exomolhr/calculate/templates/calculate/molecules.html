@@ -119,15 +119,8 @@
 
     <div class="container text-center">
 
-        <form id="moleculeForm" method="post" action="/calculate/">
+        <form id="moleculeForm" method="GET" action="/calculate/">
     
-            {% comment %} <div class="form-group mx-auto form-inline" style="justify-content:center;">
-                <input type="search" class="form-control mx-sm-3 mb-2" placeholder="Search Molecule">
-                <button type="submit" class="form-control mb-2 btn btn-outline-success">Search</button>
-                <button type="submit" class="form-control mx-sm-3 mb-2 btn btn-primary">Submit</button>
-            </div>  {% endcomment %}
-
-
             <div style="display:flex;justify-content: center;">
 
                 <div style="display:flex;flex-direction:column;">
@@ -252,16 +245,6 @@
                 }
             });
         });
-
-        document.querySelector("form").addEventListener("submit", function(event) {
-            event.preventDefault();
-            if (selectedMolecules.length > 0) {
-                var moleculesUrl = selectedMolecules.join('_');
-                var selectedMoleculesUrl = "/calculate/" + moleculesUrl + "/";
-                window.location.href = selectedMoleculesUrl;
-            }
-        });
-
     });
 
 </script>

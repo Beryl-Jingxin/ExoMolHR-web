@@ -118,7 +118,7 @@
         </div>
 
         <div class="container text-center">
-            <form id="isotopologueForm" method="post" action="/calculate/{{ molecules_url }}/">
+            <form id="isotopologueForm" method="GET" action="/calculate/">
 
                 <div class="form-group mx-auto form-inline" style="justify-content:center;">
                     <input type="search" class="form-control mx-sm-3 mb-2" style="width: 268px;" placeholder="Search Molecule or Isotopologue">
@@ -137,9 +137,8 @@
                                 <th rowspan=$rowspan style="vertical-align:middle;text-align:center">ID</th>
                                 <th rowspan=$rowspan style="vertical-align:middle;text-align:center">Molecule</th>
                                 <th rowspan=$rowspan style="vertical-align:middle;text-align:center">Isotopologue</th>
-                                <th rowspan=$rowspan style="vertical-align:middle;text-align:center">Iso-Slug</th>
-                                <th rowspan=$rowspan style="vertical-align:middle;text-align:center">Isotopologue Formula</th>
                                 <th rowspan=$rowspan style="vertical-align:middle;text-align:center">Isotopologue Mass (Da)</th>
+                                <th rowspan=$rowspan style="vertical-align:middle;text-align:center">Dataset</th>
                                 <th rowspan=$rowspan style="vertical-align:middle;text-align:center">Choose</th>
                             </tr>
                         </thead>
@@ -150,12 +149,11 @@
                                 <td rowspan=$rowspan style="vertical-align:middle;text-align:center">{{ row.id|stringformat:".3g" }}</td>
                                 <td rowspan=$rowspan style="vertical-align:middle;text-align:center">{{ row.molhtml|safe }}</td>
                                 <td rowspan=$rowspan style="vertical-align:middle;text-align:center">{{ row.isohtml|safe }}</td>
-                                <td rowspan=$rowspan style="vertical-align:middle;text-align:center">{{ row.isoslug }}</td>
-                                <td rowspan=$rowspan style="vertical-align:middle;text-align:center">{{ row.isoformula }}</td>
                                 <td rowspan=$rowspan style="vertical-align:middle;text-align:center">{{ row.isomass|stringformat:".6f" }}</td>  
+                                <td rowspan=$rowspan style="vertical-align:middle;text-align:center">{{ row.dataset }}</td>
                                 <td rowspan=$rowspan style="vertical-align:middle;text-align:center">
                                     <div class="form-check">
-                                        <input class="form-check-input isoslug-checkbox" type="checkbox" name="isoslug" value="{{ row.isoslug }}">
+                                        <input class="form-check-input isoslug-checkbox" type="checkbox" name="iso" value="{{ row.isoslug }}">
                                         <label class="form-check-label" for="isoslug"></label>
                                     </div>
                                 </td>                    
@@ -208,11 +206,9 @@
             var tableRows = tableBody.querySelectorAll("tr");
     
             tableRows.forEach(function(row) {
-                var isotopologueName = row.querySelector("td:nth-child(2)").textContent.toLowerCase();
-                var column3Text = row.querySelector("td:nth-child(3)").textContent.toLowerCase();
-                var column4Text = row.querySelector("td:nth-child(4)").textContent.toLowerCase();
-                var column5Text = row.querySelector("td:nth-child(5)").textContent.toLowerCase();
-                if (isotopologueName.includes(searchText) || column3Text.includes(searchText) || column4Text.includes(searchText) || column5Text.includes(searchText)) {
+                var moleculeName = row.querySelector("td:nth-child(2)").textContent.toLowerCase();
+                var isotopologueName = row.querySelector("td:nth-child(3)").textContent.toLowerCase();
+                if (moleculeName.includes(searchText) || isotopologueName.includes(searchText)) {
                     row.classList.add("highlight");
                     row.scrollIntoView({ behavior: "smooth", block: "nearest", inline: "start" });
                 } else {
@@ -221,16 +217,6 @@
             });
         });
     
-        document.querySelector("form").addEventListener("submit", function(event) {
-            event.preventDefault();
-            if (selectedIsotopologues.length > 0) {
-                var isotopologuesUrl = selectedIsotopologues.join('_');
-                var selectedIsotopologuesUrl = "/calculate/{{ molecules_url }}/" + isotopologuesUrl + "/";
-                window.location.href = selectedIsotopologuesUrl;
-            }
-        });
-
-
     });
 
 </script>
