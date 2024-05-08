@@ -87,15 +87,44 @@ def get_tip(header_name):
         header_tip = "You're on your own"
     return header_tip
 
+def get_tip(header_names, localcsv_filename):
+    header_labels = [col.replace("'","").replace('"','') for col in header_names]
+    header_names_df = pd.DataFrame({'labelname':header_names, 'label':header_labels})
+    EXOMOL_DIR = '/mnt/data/exomol/exomol3_data/'
+    species_folder = '/'.join(localcsv_filename.split('__')[:3]) 
+    def_json_filename = '__'.join(localcsv_filename.split('__')[1:3]) + '.json'
+    def_json_path = EXOMOL_DIR + species_folder + '/' + def_json_filename
+    def_json_df = pd.read_json(def_json_path, orient='columns')
+    states_col_dict = def_json_df['dataset']['states']['states_file_fields']
+    states_col_df = pd.DataFrame(states_col_dict)
+    states_col_df['name'] = states_col_df['name'].str.replace('gtot','g')
+    states_col_df['label'] = [col.split(':')[-1].replace('Sigma','Σ').replace('Lambda','Λ').replace('Omega','Ω') 
+                            for col in states_col_df['name'].values]
+    states_col_df['desc'] = '<br/>Description: ' + states_col_df['desc'].str.replace('-1','<sup>-1</sup>')
+    states_col_df['fmt'] = ('Fortran format | C format<br/><code>' + states_col_df['ffmt'].str
+                            .cat(states_col_df['cfmt'], sep='</code> | <code>') + '</code>')
+    header_details_df = pd.merge(states_col_df, header_names_df, on='label')
+    header_details_df['labelname'] = ('Label: ' + header_details_df['labelname'].str
+                                    .replace("'", "' for upper state").str.replace('"','" for lower state'))
+    main_tips = ['Label: Frenquency<br/>Description: Wavenumnber in cm<sup>-1</sup><br/>Fortran format | C format<br/><code>F12.6</code> | <code>%12.6f</code>',
+    'Label: Uncertainty<br/>Description: Description: Energy uncertainty in cm<sup>-1</sup><br/>Fortran format | C format<br/><code>F12.6</code> | <code>%12.6f</code>',
+    'Label: A<br/>Description: Einstein A coefficient<br/>Fortran format | C format<br/><code>ES10.4</code> | <code>%10.4E</code>']
+    other_tips = (header_details_df['labelname'].astype(str) + '<br/>' + 
+                  header_details_df['desc'].astype(str) + '<br/>' + 
+                  header_details_df['fmt'].astype(str)).tolist()
+    head_tips = main_tips + other_tips
+    return(head_tips)
+
+
 def species(request, molecule, isotopologue, dataset):
     source_link = f"https://www.exomol.com/data/molecules/{molecule}/{isotopologue}/{dataset}/"
     csvinf_df = pieces_df[pieces_df[['molecule', 'isoslug']].isin([molecule, isotopologue, dataset]).all(axis=1)]
     localcsv_filename = csvinf_df['filename'].values[0]
     localcsv_filepath = settings.LOCAL_CSV_DIR / f"loc_result/{localcsv_filename}"
     # Read the CSV file into a pandas DataFrame
-    csv_df = pd.read_csv(localcsv_filepath, dtype=str).head(200)
+    csv_df = pd.read_csv(localcsv_filepath, dtype=str).head(200)    
     header_names = [col.replace('Sigma','Σ').replace('Lambda','Λ').replace('Omega','Ω') for col in csv_df.columns]
-    header_tips = [get_tip(header_name) for header_name in header_names]
+    header_tips = get_tip(header_names, localcsv_filename)
     out = csv_df.to_dict('records')
     molhtml = csvinf_df['molhtml'].values[0]
     isohtml = csvinf_df['isohtml'].values[0]
