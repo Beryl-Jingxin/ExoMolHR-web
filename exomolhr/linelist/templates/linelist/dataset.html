@@ -90,12 +90,10 @@
                 </li>
                 <!-- Dropdown -->
                 <li class="nav-item dropdown">
-                    <a class="nav-link dropdown-toggle" href="#" id="navbardrop" data-toggle="dropdown">
-                    Database
-                    </a>
+                    <a class="nav-link dropdown-toggle" href="#" id="navbardrop" data-toggle="dropdown">Database</a>
                     <div class="dropdown-menu">
-                        <a class="dropdown-item" href="{% url 'molecule' %}">Line list</a>
-                        <a class="dropdown-item" href="{% url 'get_calculate_params' %}">Calculate</a>
+                    <a class="dropdown-item" href="{% url 'molecule' %}">Line list</a>
+                    <a class="dropdown-item" href="{% url 'get_calculate_params' %}">Calculate</a>
                     </div>
                 </li>
                 <li class="nav-item">
@@ -120,19 +118,6 @@
             <p class="card-text" style="font-family:'Josefin Sans';font-size:20px">Isotopologue {{ isoh|safe }}</p>
             <p class="card-text" style="font-family:'Josefin Sans';font-size:20px">Step 3: Choose one dataset</p>
         </div>
-
-        <!--
-        <div class="container text-center">
-            <form class="form-inline">
-                <div class="form-group mx-auto">
-                    <input type="search" class="form-control mx-sm-3 mb-2" placeholder="Search Dataset">
-                    <button type="submit" class="form-control mb-2 btn btn-outline-success">Search</button>
-                    <button type="submit" class="form-control mx-sm-3 mb-2 btn btn-primary">Submit</button>
-                </div>
-                
-            </form>
-        </div>
-        -->
 
         <div style="display:flex;justify-content: center;">
             <div style="display:flex;flex-direction:column;">

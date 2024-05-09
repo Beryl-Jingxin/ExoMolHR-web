@@ -118,7 +118,7 @@
         </div>
 
         <div class="container text-center">
-            <form id="isotopologueForm" method="GET" action="/calculate/">
+            <form id="isotopologueForm" method="GET" action="{% url 'get_calculate_params' %}">
 
                 <div class="form-group mx-auto form-inline" style="justify-content:center;">
                     <input type="search" class="form-control mx-sm-3 mb-2" style="width: 268px;" placeholder="Search Molecule or Isotopologue">

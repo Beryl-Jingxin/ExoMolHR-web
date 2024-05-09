@@ -17,4 +17,5 @@ conf.py
 activate
 sandpit
 res/test.ipynb
-.idea
+*.idea
+*.ipynb_checkpoints

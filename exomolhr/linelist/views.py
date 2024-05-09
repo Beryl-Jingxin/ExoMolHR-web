@@ -83,10 +83,11 @@ def dataset(request, molecule, isotopologue):
 def get_tip(header_names, localcsv_filename):
     header_labels = [col.replace("'","").replace('"','') for col in header_names]
     header_names_df = pd.DataFrame({'labelname':header_names, 'label':header_labels})
-    EXOMOL_DIR = '/mnt/data/exomol/exomol3_data/'
+    # EXOMOL_DIR = '/mnt/data/exomol/exomol3_data/'
     species_folder = '/'.join(localcsv_filename.split('__')[:3]) 
     def_json_filename = '__'.join(localcsv_filename.split('__')[1:3]) + '.json'
-    def_json_path = EXOMOL_DIR + species_folder + '/' + def_json_filename
+    # def_json_path = EXOMOL_DIR / species_folder + '/' + def_json_filename
+    def_json_path = settings.EXOMOL_DATA_DIR / f"{species_folder}/{def_json_filename}"
     def_json_df = pd.read_json(def_json_path, orient='columns')
     states_col_dict = def_json_df['dataset']['states']['states_file_fields']
     states_col_df = pd.DataFrame(states_col_dict)
@@ -100,8 +101,8 @@ def get_tip(header_names, localcsv_filename):
     header_details_df['labelname'] = ('Label: ' + header_details_df['labelname'].str
                                       .replace("'", "' for upper state").str.replace('"',"'' for lower state"))
     main_tips = ['Label: Frenquency<br/>Description: Wavenumnber in cm<sup>-1</sup><br/>Fortran format | C format<br/><code>F12.6</code> | <code>%12.6f</code>',
-    'Label: Uncertainty<br/>Description: Description: Energy uncertainty in cm<sup>-1</sup><br/>Fortran format | C format<br/><code>F12.6</code> | <code>%12.6f</code>',
-    'Label: A<br/>Description: Einstein A coefficient<br/>Fortran format | C format<br/><code>ES10.4</code> | <code>%10.4E</code>']
+                 'Label: Uncertainty<br/>Description: Description: Energy uncertainty in cm<sup>-1</sup><br/>Fortran format | C format<br/><code>F12.6</code> | <code>%12.6f</code>',
+                 'Label: A<br/>Description: Einstein A coefficient<br/>Fortran format | C format<br/><code>ES10.4</code> | <code>%10.4E</code>']
     other_tips = (header_details_df['labelname'].astype(str) + '<br/>' + 
                   header_details_df['desc'].astype(str) + '<br/>' + 
                   header_details_df['fmt'].astype(str)).tolist()
@@ -137,7 +138,7 @@ def download_localfile(request, molecule, isotopologue, dataset):
     csvinf_df = pieces_df[pieces_df[['molecule', 'isoslug']].isin([molecule, isotopologue, dataset]).all(axis=1)]
     if not csvinf_df.empty:
         localcsv_filename = csvinf_df.iloc[0]['filename']
-        localcsv_filepath = settings.DATA_DIR / localcsv_filename
+        localcsv_filepath = settings.LOCAL_CSV_DIR / f"loc_result/{localcsv_filename}"
         if os.path.exists(localcsv_filepath):
             with open(localcsv_filepath, 'rb') as file:
                 # Set the content type of the response

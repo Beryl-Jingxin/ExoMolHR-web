@@ -118,12 +118,10 @@ $(function () {
                 </li>
                 <!-- Dropdown -->
                 <li class="nav-item dropdown">
-                    <a class="nav-link dropdown-toggle" href="#" id="navbardrop" data-toggle="dropdown">
-                    Database
-                    </a>
+                    <a class="nav-link dropdown-toggle" href="#" id="navbardrop" data-toggle="dropdown">Database</a>
                     <div class="dropdown-menu">
-                        <a class="dropdown-item" href="{% url 'molecule' %}">Line list</a>
-                        <a class="dropdown-item" href="{% url 'get_calculate_params' %}">Calculate</a>
+                    <a class="dropdown-item" href="{% url 'molecule' %}">Line list</a>
+                    <a class="dropdown-item" href="{% url 'get_calculate_params' %}">Calculate</a>
                     </div>
                 </li>
                 <li class="nav-item">
@@ -159,31 +157,6 @@ $(function () {
 
     </div>
 
-    {% comment %} <div class="table-responsive-lg table-fixhead">
-        <table class="table table-bordered table-hover align-middle mx-auto" style="width: 90%;">
-            <thead>
-                <tr>
-                    {% for header in headers %}
-                    <th>
-                        <span class="header-tooltip" data-toggle="tooltip" data-placement="top" title="{{ header.description }}">{{ header }}</span>
-                    </th>
-                    {% endfor %}
-                </tr>
-            </thead>
-            <tbody>
-                {% for row in data %}
-                <tr>
-                    {% for val in row.values %}
-                    <td>{{ val }}</td>
-                    {% endfor %}
-                </tr>
-                {% endfor %}
-            </tbody>
-        </table>
-    </div>  {% endcomment %}
-
-
-    
     <div class="table-responsive-lg table-fixhead">
         <table class="table table-bordered table-hover align-middle mx-auto" id="dataTable" style="width: 90%;">
             <thead>
