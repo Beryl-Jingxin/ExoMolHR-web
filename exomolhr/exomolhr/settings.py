@@ -19,7 +19,7 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = False
 
-ALLOWED_HOSTS = ['exomol.com/exomolhr/', 'www.exomol.com/exomolhr/']
+ALLOWED_HOSTS = ['exomol.com', 'www.exomol.com', 'localhost']
 
 # Application definition
 

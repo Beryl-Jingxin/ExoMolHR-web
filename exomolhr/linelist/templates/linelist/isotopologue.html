@@ -95,12 +95,12 @@
                     Database
                     </a>
                     <div class="dropdown-menu">
-                    <a class="dropdown-item" href="/linelist">Line list</a>
-                    <a class="dropdown-item" href="/calculate">Calculate</a>
+                        <a class="dropdown-item" href="{% url 'molecule' %}">Line list</a>
+                        <a class="dropdown-item" href="{% url 'get_calculate_params' %}">Calculate</a>
                     </div>
                 </li>
                 <li class="nav-item">
-                    <a class="nav-link active" aria-current="true" href="/linelist/{{ molf }}">Molecule {{ molh|safe }}</a>
+                    <a class="nav-link active" aria-current="true" href="{% url 'molecule' %}{{ molf }}">Molecule {{ molh|safe }}</a>
                 </li>
                 <li class="nav-item ml-auto">
                     <a class="nav-link" href="{% url 'about' %}">About</a>

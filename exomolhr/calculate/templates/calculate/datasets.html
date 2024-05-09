@@ -93,15 +93,15 @@
                     Database
                     </a>
                     <div class="dropdown-menu">
-                    <a class="dropdown-item" href="/linelist">Line list</a>
-                    <a class="dropdown-item" href="/calculate">Calculate</a>
+                        <a class="dropdown-item" href="{% url 'molecule' %}">Line list</a>
+                        <a class="dropdown-item" href="{% url 'get_calculate_params' %}">Calculate</a>
                     </div>
                 </li>
                 <li class="nav-item">
-                    <a class="nav-link" href="/calculate/{{ molecules_url }}">Molecule {{ moleculeshtml|safe }}</a> 
+                    <a class="nav-link" href="{% url 'get_calculate_params' %}{{ molecules_url }}">Molecule {{ moleculeshtml|safe }}</a> 
                 </li>
                 <li class="nav-item">
-                    <a class="nav-link active" aria-current="true" href="/calculate/{{ molecules_url }}/{{ isotopologues_url }}">Isotopologue {{ isotopologueshtml|safe }}</a> 
+                    <a class="nav-link active" aria-current="true" href="{% url 'get_calculate_params' %}{{ molecules_url }}/{{ isotopologues_url }}">Isotopologue {{ isotopologueshtml|safe }}</a> 
                 </li>
                 <li class="nav-item ml-auto">
                     <a class="nav-link" href="{% url 'about' %}">About</a>
@@ -121,7 +121,7 @@
         </div>
 
         <div class="container text-center">
-            <form id="datasetForm" method="post" action="/calculate/{{ molecules_url }}/{{ isotopologues_url }}/">
+            <form id="datasetForm" method="post" action="{% url 'get_calculate_params' %}{{ molecules_url }}/{{ isotopologues_url }}/">
 
             <div style="display:flex;justify-content: center;">
                 <div style="display:flex;flex-direction:column;">

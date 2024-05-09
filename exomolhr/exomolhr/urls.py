@@ -22,7 +22,7 @@ urlpatterns = [
     path('exomolhr/admin/', admin.site.urls),
     path('exomolhr/', views.Home, name='home'),
     path('exomolhr/about/', views.About, name='about'),
-    path('exomolhr/contact', views.Contact, name='contact'),
+    path('exomolhr/contact/', views.Contact, name='contact'),
     path('exomolhr/linelist/', include('linelist.urls')),
     path('exomolhr/calculate/', include('calculate.urls')),
 ]
