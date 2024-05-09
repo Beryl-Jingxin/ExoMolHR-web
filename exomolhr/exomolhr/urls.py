@@ -19,11 +19,11 @@ from linelist import views
 
 
 urlpatterns = [
-    path('admin/', admin.site.urls),
-    path('', views.Home, name='home'),
-    path('about/', views.About, name='about'),
-    path('contact', views.Contact, name='contact'),
-    path('linelist/', include('linelist.urls')),
-    path('calculate/', include('calculate.urls')),
+    path('exomolhr/admin/', admin.site.urls),
+    path('exomolhr/', views.Home, name='home'),
+    path('exomolhr/about/', views.About, name='about'),
+    path('exomolhr/contact', views.Contact, name='contact'),
+    path('exomolhr/linelist/', include('linelist.urls')),
+    path('exomolhr/calculate/', include('calculate.urls')),
 ]
 

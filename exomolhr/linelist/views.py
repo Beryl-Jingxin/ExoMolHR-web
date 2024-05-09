@@ -80,13 +80,6 @@ def dataset(request, molecule, isotopologue):
     return render(request, 'linelist/dataset.html', context)
 
 
-def get_tip(header_name):
-    if header_name == 'Frequency':
-        header_tip = r"Wavenumber in cm<sup>-1</sup><br/><code>F12.6</code> | <code>12.6%</code>"
-    else:
-        header_tip = "You're on your own"
-    return header_tip
-
 def get_tip(header_names, localcsv_filename):
     header_labels = [col.replace("'","").replace('"','') for col in header_names]
     header_names_df = pd.DataFrame({'labelname':header_names, 'label':header_labels})
@@ -100,13 +93,13 @@ def get_tip(header_names, localcsv_filename):
     states_col_df['name'] = states_col_df['name'].str.replace('gtot','g')
     states_col_df['label'] = [col.split(':')[-1].replace('Sigma','Σ').replace('Lambda','Λ').replace('Omega','Ω') 
                             for col in states_col_df['name'].values]
-    states_col_df['desc'] = '<br/>Description: ' + states_col_df['desc'].str.replace('-1','<sup>-1</sup>')
+    states_col_df['desc'] = 'Description: ' + states_col_df['desc'].str.replace('-1','<sup>-1</sup>')
     states_col_df['fmt'] = ('Fortran format | C format<br/><code>' + states_col_df['ffmt'].str
                             .cat(states_col_df['cfmt'], sep='</code> | <code>') + '</code>')
     header_details_df = pd.merge(states_col_df, header_names_df, on='label')
     header_details_df['labelname'] = ('Label: ' + header_details_df['labelname'].str
-                                    .replace("'", "' for upper state").str.replace('"','" for lower state'))
-    main_tips = ['Label: Frequency<br/>Description: Wavenumber in cm<sup>-1</sup><br/>Fortran format | C format<br/><code>F12.6</code> | <code>%12.6f</code>',
+                                      .replace("'", "' for upper state").str.replace('"',"'' for lower state"))
+    main_tips = ['Label: Frenquency<br/>Description: Wavenumnber in cm<sup>-1</sup><br/>Fortran format | C format<br/><code>F12.6</code> | <code>%12.6f</code>',
     'Label: Uncertainty<br/>Description: Description: Energy uncertainty in cm<sup>-1</sup><br/>Fortran format | C format<br/><code>F12.6</code> | <code>%12.6f</code>',
     'Label: A<br/>Description: Einstein A coefficient<br/>Fortran format | C format<br/><code>ES10.4</code> | <code>%10.4E</code>']
     other_tips = (header_details_df['labelname'].astype(str) + '<br/>' + 
@@ -120,7 +113,7 @@ def species(request, molecule, isotopologue, dataset):
     source_link = f"https://www.exomol.com/data/molecules/{molecule}/{isotopologue}/{dataset}/"
     csvinf_df = pieces_df[pieces_df[['molecule', 'isoslug']].isin([molecule, isotopologue, dataset]).all(axis=1)]
     localcsv_filename = csvinf_df['filename'].values[0]
-    localcsv_filepath = settings.LOCAL_CSV_DIR / localcsv_filename
+    localcsv_filepath = settings.LOCAL_CSV_DIR / f"loc_result/{localcsv_filename}"
     # Read the CSV file into a pandas DataFrame
     csv_df = pd.read_csv(localcsv_filepath, dtype=str).head(200)    
     header_names = [col.replace('Sigma','Σ').replace('Lambda','Λ').replace('Omega','Ω') for col in csv_df.columns]
