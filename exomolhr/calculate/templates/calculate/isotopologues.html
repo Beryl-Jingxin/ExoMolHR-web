@@ -119,16 +119,24 @@
 
         <div class="container text-center">
             <form id="isotopologueForm" method="GET" action="{% url 'get_calculate_params' %}">
-
-                <div class="form-group mx-auto form-inline" style="justify-content:center;">
-                    <input type="search" class="form-control mx-sm-3 mb-2" style="width: 268px;" placeholder="Search Molecule or Isotopologue">
-                    <button type="submit" class="form-control mb-2 btn btn-outline-success">Search</button>
-                    <button type="submit" class="form-control mx-sm-3 mb-2 btn btn-primary">Submit</button>
-                </div> 
+                
+                <div style="display:flex;justify-content: center;">
+                    <div style="display:flex;flex-direction:column;">
+                        <div class="form-group mx-auto form-inline" style="justify-content:center;">
+                            <input type="search" id="molisoSearchInput" class="form-control mx-sm-3 mb-2" style="width: 268px;" placeholder="Search Molecule or Isotopologue">
+                            <button type="button" id="molisoSearchButton" class="form-control mb-2 btn btn-outline-success">Search</button>
+                        </div>
+                        <div class="form-group mx-auto form-inline" style="justify-content:center;">
+                            <input type="search" id="datasetSearchInput" class="form-control mx-sm-3 mb-2" style="width: 268px;" placeholder="Search Dataset Name">
+                            <button type="button" id="datasetSearchButton" class="form-control mb-2 btn btn-outline-success">Search</button>
+                        </div>
+                    </div>
+                    <div style="display: flex; justify-content:center;">
+                        <button type="submit" class="form-control mx-sm-3 mb-2 btn btn-primary" style="height:100px">Submit</button>
+                    </div>
+                </div>  
 
                 <p style="font-family:'Josefin Sans'">Selected Isotopologues: <span id="selectedIsotopologues"></span></p>
-
-
    
                 <div class="row justify-content-center table-responsive table-fixhead">
                     <table class="table table-bordered table-hover align-middle mx-auto" id="dataTable" style="font-family:'Josefin Sans';width:auto;margin:auto;font-size:18px;background-color:rgba(255,255,255,0.2)">
@@ -179,8 +187,10 @@
     document.addEventListener("DOMContentLoaded", function() {
         var selectedIsotopologues = [];
         var selectedIsotopologuesElement = document.getElementById("selectedIsotopologues");
-        var searchInput = document.querySelector("input[type='search']");
-        var searchButton = document.querySelector("button[type='submit']");
+        var molisoSearchInput = document.getElementById("molisoSearchInput");
+        var molisoSearchButton = document.getElementById("molisoSearchButton");
+        var datasetSearchInput = document.getElementById("datasetSearchInput");
+        var datasetSearchButton = document.getElementById("datasetSearchButton");
         var tableBody = document.querySelector("#dataTable tbody");
         var tableHeader = document.querySelector("#dataTable thead");
     
@@ -199,10 +209,9 @@
                 }
             });
         });
-    
-        searchButton.addEventListener("click", function(event) {
-            event.preventDefault();
-            var searchText = searchInput.value.toLowerCase();
+
+        molisoSearchButton.addEventListener("click", function(event) {
+            var searchText = molisoSearchInput.value.toLowerCase();
             var tableRows = tableBody.querySelectorAll("tr");
     
             tableRows.forEach(function(row) {
@@ -216,7 +225,21 @@
                 }
             });
         });
+
+        datasetSearchButton.addEventListener("click", function() {
+            var searchText = datasetSearchInput.value.toLowerCase();
+            var tableRows = tableBody.querySelectorAll("tr");
     
+            tableRows.forEach(function(row) {
+                var datasetName = row.querySelector("td:nth-child(5)").textContent.toLowerCase();
+                if (datasetName.includes(searchText)) {
+                    row.classList.add("highlight");
+                    row.scrollIntoView({ behavior: "smooth", block: "nearest", inline: "start" });
+                } else {
+                    row.classList.remove("highlight");
+                }
+            });
+        });
     });
 
 </script>
