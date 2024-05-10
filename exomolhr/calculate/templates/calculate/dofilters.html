@@ -126,8 +126,8 @@
 
 
         <div class="container text-center">
-            <form id="filterForm" method="GET" action="/calculate/get-data/">
-
+            <form id="filterForm" method="GET" action="{% url 'get_data' %}">
+                
 <p>
 <label for="numin">nu-min / cm<sup>-1</sup></label>:
 <input type="text" id="numin" name="numin" value="0"></input>
