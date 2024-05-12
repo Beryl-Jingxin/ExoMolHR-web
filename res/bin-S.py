@@ -2,8 +2,28 @@ import numpy as np
 import pandas as pd
 import matplotlib.pyplot as plt
 
-filestem = '/Users/christian/www/exomolhr_results/12C-16O2__27Al-16O_web'
-filename = filestem + '.hr'
+
+
+### TODO Remove me ###
+import sys, os
+# webapp_path = '/Users/christian/www/ExoMolHR-web/exomolhr'
+webapp_path = '/home/jingxin/ExoMolHR-web/exomolhr'
+sys.path.append(webapp_path)
+os.environ['DJANGO_SETTINGS_MODULE'] = 'exomolhr.settings'
+# Prepare the Django models
+import django
+django.setup()
+### TODO Remove me ###
+
+
+from django.conf import settings
+
+# filestem = '/Users/christian/www/exomolhr_results/12C-16O2__27Al-16O_web'
+# filename = filestem + '.hr'
+
+
+filename = settings.EXOMOLHR_RESULTS_DIR / "12C-16O2__27Al-16O_web.hr"
+
 df = pd.read_csv(filename,
                  header=None,
                  sep=r'\s+',
@@ -36,7 +56,7 @@ def bin_data(dnu):
         Sbinned[iso][j] += S
 
     for iso, S in Sbinned.items():
-        np.savetxt(f'{iso}__{dnu}.hr.S', np.vstack((nubins, S)).T, fmt=["%12.6f", "%10.3e"])
+        np.savetxt(settings.EXOMOLHR_RESULTS_DIR / f'{iso}__{dnu}.hr.S', np.vstack((nubins, S)).T, fmt=["%12.6f", "%10.3e"])
 
 for dnu in dnus:
     print(dnu)

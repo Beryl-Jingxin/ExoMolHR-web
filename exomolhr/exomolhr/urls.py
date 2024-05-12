@@ -21,7 +21,7 @@ from linelist import views
 
 urlpatterns = [
     path('admin/', admin.site.urls),
-    path(settings.ROOT_URL, include('exomolhr.urls_home')),
+    path(str(settings.ROOT_URL), include('exomolhr.urls_home')),
     
 ]
 

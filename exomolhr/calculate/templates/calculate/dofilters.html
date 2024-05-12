@@ -93,17 +93,17 @@
                     </a>
                     <div class="dropdown-menu">
                         <a class="dropdown-item" href="{% url 'molecule' %}">Line list</a>
-                        <a class="dropdown-item" href="{% url 'get_calculate_params' %}">Calculate</a>
+                        <a class="dropdown-item" href="{% url 'calculate:get_calculate_params' %}">Calculate</a>
                     </div>
                 </li>
                 <li class="nav-item">
-                    <a class="nav-link" href="{% url 'get_calculate_params' %}{{ molecules_url }}">Molecule {{ moleculeshtml|safe }}</a> 
+                    <a class="nav-link" href="{% url 'calculate:get_calculate_params' %}{{ molecules_url }}">Molecule {{ moleculeshtml|safe }}</a> 
                 </li>
                 <li class="nav-item">
-                    <a class="nav-link" href="{% url 'get_calculate_params' %}{{ molecules_url }}/{{ isotopologues_url }}">Isotopologue {{ isotopologueshtml|safe }}</a> 
+                    <a class="nav-link" href="{% url 'calculate:get_calculate_params' %}{{ molecules_url }}/{{ isotopologues_url }}">Isotopologue {{ isotopologueshtml|safe }}</a> 
                 </li>
                 <li class="nav-item">
-                    <a class="nav-link active" aria-current="true" href="{% url 'get_calculate_params' %}{{ molecules_url }}/{{ isotopologues_url }}/{{ datasets_url }}">Dataset {{ datasetshtml|safe }}</a>
+                    <a class="nav-link active" aria-current="true" href="{% url 'calculate:get_calculate_params' %}{{ molecules_url }}/{{ isotopologues_url }}/{{ datasets_url }}">Dataset {{ datasetshtml|safe }}</a>
                 </li>
                 <li class="nav-item ml-auto">
                     <a class="nav-link" href="{% url 'about' %}">About</a>
@@ -126,7 +126,7 @@
 
 
         <div class="container text-center">
-            <form id="filterForm" method="GET" action="{% url 'get_data' %}">
+            <form id="filterForm" method="GET" action="{% url 'calculate:get_data' %}">
                 
 <p>
 <label for="numin">nu-min / cm<sup>-1</sup></label>:
