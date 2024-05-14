@@ -1,0 +1,68 @@
+{% load static %}
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>ExoMolHR</title>
+
+    <link rel="stylesheet" href="https://cdn.datatables.net/2.0.3/css/dataTables.dataTables.css"/>  
+    <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/4.0.0/css/bootstrap.min.css" integrity="sha384-Gn5384xqQ1aoWXA+058RXPxPg6fy4IWvTNh0E263XmFcJlSAwiGgFAW/dAiS6JXm" crossorigin="anonymous">
+    
+    <script src="https://cdn.staticfile.net/jquery/3.2.1/jquery.min.js"></script>
+    <script src="https://cdn.staticfile.net/popper.js/1.15.0/umd/popper.min.js"></script>
+    <script src="https://cdn.staticfile.net/twitter-bootstrap/4.3.1/js/bootstrap.min.js"></script>
+    
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Croissant+One&family=Josefin+Sans:wght@500&family=Yatra+One&display=swap">
+
+    <link rel="stylesheet" type="text/css" href="{% static 'theme/css/custom.css' %}"/> 
+
+</head>
+
+<body>
+
+<div class="card">
+    <div class="card mb-3">
+        <div id="banner" style="background-image: url('{% static "theme/img/banner.jpg" %}')">
+            <!--<img src="" id="banner-image" class="card-img-top; rounded-pill" alt="banner image of the barred spiral galaxy NGC 1300">-->
+            <h1 class="card-text" id="banner-title">ExoMolHR</h1>
+            <h2 class="card-text" id="banner-subtitle">High Resolution Database</h2>
+            <p class="card-text" id="banner-credit">@NASA, ESA, and The Hubble Heritage Team STScI/AURA</p>
+        </div>
+        
+        <div class="card-header">            
+            <ul class="nav nav-tabs card-header-tabs navbar-expand-sm">
+            <li class="nav-item">
+                <a class="nav-link" href="{% url 'linelist:get_linelist' %}">Home</a>
+            </li>
+
+            <li class="nav-item dropdown">
+                <a class="nav-link dropdown-toggle active" aria-current="true" href="#" id="navbardrop" data-toggle="dropdown">
+                Database
+                </a>
+                <div class="dropdown-menu">
+                    <a class="dropdown-item" href="{% url 'linelist:get_linelist' %}">Line list</a>
+                    <a class="dropdown-item" href="{% url 'linelist:get_linelist' %}">Calculate</a>
+                </div>
+            </li>
+            <li class="nav-item ml-auto">
+                <a class="nav-link" href="{% url 'linelist:get_linelist' %}">About</a>
+            </li>
+            <li class="nav-item">
+                <a class="nav-link" href="{% url 'linelist:get_linelist' %}">Contact</a>
+            </li>
+            </ul>
+        </div> 
+    </div>
+{% block content %}
+{% endblock %}
+
+<div class="card-footer text-muted">
+    <p class="card-text">ExoMolHR uses ExoMol data supported by ERC Advanced Investigator Projects 267219 and 883830.</p>
+</div>
+
+</body>
+</html>
+

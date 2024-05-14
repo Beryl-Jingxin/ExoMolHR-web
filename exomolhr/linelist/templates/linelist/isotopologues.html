@@ -1,0 +1,74 @@
+{% extends 'theme/base.html' %}
+
+{% block content %}
+
+    <div class="card-body">
+        <h3 class="card-title">Isotopologues</h3>
+        <p class="card-text">Step 2: Choose isotopologues</p>
+    </div>
+
+    <div class="container text-center">
+
+        <form id="isotopologueForm" method="GET" action="{% url 'linelist:get_linelist' %}">
+
+           <button type="submit" class="btn btn-primary">Submit</button> 
+
+        <p>Selected Isotopologues: <span id="selectedIsotopologues"></span></p>
+
+            
+           <div class="row justify-content-center table-responsive table-fixhead">
+                <table class="table table-bordered table-hover align-middle mx-auto" id="dataTable" style="width:auto;">
+                    <thead>
+                        <tr>
+                            <th>Molecule</th>
+                            <th>Isotopologue</th>
+                            <th>Mass (Da)</th>
+                            <th>Choose</th>
+                        </tr>
+                    </thead>
+
+                    <tbody>
+                        {% for iso in isos %}
+                        <tr>
+                            <td>{{ iso.molecule.html|safe }}</td>
+                            <td>{{ iso.html|safe }}</td>
+                            <td>{{ iso.mass|stringformat:".3f" }}</td>
+                            <td>
+                                <div class="form-check">
+                                    <input class="form-check-input iso-checkbox" type="checkbox" name="iso" value="{{ iso.slug }}">
+                                    <label class="form-check-label" for="iso"></label>
+                                </div>
+                            </td>               
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </form>
+    </div>  
+</div>
+
+<script>
+    document.addEventListener("DOMContentLoaded", function() {
+        var selectedIsotopologues = [];
+        var selectedIsotopologuesElement = document.getElementById("selectedIsotopologues");
+    
+        document.querySelectorAll(".iso-checkbox").forEach(function(checkbox) {
+            checkbox.addEventListener("change", function() {
+                var isotopologueName = this.value;
+                if (this.checked) {
+                    selectedIsotopologues.push(isotopologueName);
+                    selectedIsotopologuesElement.textContent = selectedIsotopologues.join(", ");
+                } else {
+                    var index = selectedIsotopologues.indexOf(isotopologueName);
+                    if (index !== -1) {
+                        selectedIsotopologues.splice(index, 1);
+                        selectedIsotopologuesElement.textContent = selectedIsotopologues.join(", ");
+                    }
+                }
+            });
+        });
+    });
+</script>
+
+{% endblock %}

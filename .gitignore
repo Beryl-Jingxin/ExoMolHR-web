@@ -1,0 +1,27 @@
+*.pyc
+*.pyo
+*.db
+*.swp
+*.swo
+*.swn
+*.swm
+*.swl
+__pycache__
+.DS_Store
+.coverage
+local_settings.py
+geckodriver.log
+.sass-cache
+.mysql-password
+.ipynb_checkpoints
+conf.py
+local_db.sqlite
+Pipfile
+Pipfile.lock
+.venv
+activate
+activate-dev
+sandpit
+
+# PyCharm IDE
+.idea

@@ -1,0 +1,147 @@
+{% extends 'theme/base.html' %}
+
+{% block content %}
+
+    <div class="card-body">
+        <h3 class="card-title">Molecules</h3>
+        <p class="card-text">Step 1: Choose molecules</p>
+    </div>
+
+    <div class="container text-center">
+
+        <form id="moleculeForm" method="GET" action="{% url 'linelist:get_linelist' %}">
+    
+            <div style="display:flex;justify-content: center;">
+
+                <div style="display:flex;flex-direction:column;">
+                    <div class="form-group mx-auto form-inline" style="justify-content:center;">
+                        <input type="search" id="moleculeSearchInput" class="form-control mx-sm-3 mb-2" style="width: 197px;" placeholder="Search Molecule">
+                        <button type="button" id="moleculeSearchButton" class="form-control mb-2 btn btn-outline-success">Search</button>
+                    </div>
+                    <div class="form-group mx-auto form-inline" style="justify-content:center;">
+                        <input type="search" id="moleculeNameSearchInput" class="form-control mx-sm-3 mb-2" style="width: 197px;" placeholder="Search Molecule Name">
+                        <button type="button" id="moleculeNameSearchButton" class="form-control mb-2 btn btn-outline-success">Search</button>
+                    </div>
+                </div>
+                <div style="display: flex; justify-content:center;">
+                    <button type="submit" class="form-control mx-sm-3 mb-2 btn btn-primary" style="height:100px">Submit</button>
+                </div>
+            </div>   
+
+            <p>Selected Molecules: <span id="selectedMolecules"></span></p>
+
+
+            <div class="row justify-content-center table-responsive table-fixhead">
+                <table class="table table-bordered table-hover align-middle mx-auto" id="dataTable" style="position:relative;font-family:'Josefin Sans';width:auto;margin:auto;font-size:18px;background-color:rgba(255,255,255,0.2)">
+                    <thead>
+                        <tr>
+                            <th>Molecule</th>
+                            <th>Molecule Name</th>
+                            <th>Mass (Da)</th>
+                            <th>Choose</th>
+                        </tr>
+                    </thead>
+
+                    <tbody>
+                        {% for molecule in molecules %}
+                        <tr>
+                            <td>{{ molecule.html|safe }}</td>
+                            <td>{{ molecule.names }}</td>  
+                            <td>{{ molecule.mass|stringformat:".3f" }}</td>
+                            <td>
+                                <div class="form-check">
+                                    <input class="form-check-input molecule-checkbox" type="checkbox" name="molecule" value="{{ molecule.slug }}">
+                                    <label class="form-check-label" for="molecule"></label>
+                                </div>
+                            </td>               
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </form>
+    </div>  
+
+
+
+</div>
+
+
+<script>
+
+    document.addEventListener("DOMContentLoaded", function(){
+        var selectedMolecules = [];
+        var selectedMoleculesElement = document.getElementById("selectedMolecules");
+        var moleculeSearchInput = document.getElementById("moleculeSearchInput");
+        var moleculeSearchButton = document.getElementById("moleculeSearchButton");
+        var moleculeNameSearchInput = document.getElementById("moleculeNameSearchInput");
+        var moleculeNameSearchButton = document.getElementById("moleculeNameSearchButton");
+        var tableBody = document.querySelector("#dataTable tbody");
+        var tableHeader = document.querySelector("#dataTable thead");
+
+        document.querySelectorAll(".molecule-checkbox").forEach(function(checkbox) {
+            checkbox.addEventListener("change", function() {
+                var moleculeName = this.value;
+                if (this.checked) {
+                    selectedMolecules.push(moleculeName);
+                    selectedMoleculesElement.textContent = selectedMolecules.join(", ");
+                } else {
+                    var index = selectedMolecules.indexOf(moleculeName);
+                    if (index !== -1) {
+                        selectedMolecules.splice(index, 1);
+                        selectedMoleculesElement.textContent = selectedMolecules.join(", ");
+                    }
+                }
+            });
+        });
+
+        function removeAllHighlights() {
+            var tableRows = tableBody.querySelectorAll("tr");
+            tableRows.forEach(function(row) {
+                row.classList.remove("highlight");
+            });
+        }
+
+        moleculeSearchButton.addEventListener("click", function() {
+            var searchText = moleculeSearchInput.value.toLowerCase();
+            if (searchText == "") {
+                removeAllHighlights();
+                return;
+            }
+    
+            var tableRows = tableBody.querySelectorAll("tr");
+            tableRows.forEach(function(row) {
+                var moleculeName = row.querySelector("td:nth-child(2)").textContent.toLowerCase();
+                if (moleculeName.includes(searchText)) {
+                    row.classList.add("highlight");
+                    row.scrollIntoView({ behavior: "smooth", block: "nearest", inline: "start" });
+                } else {
+                    row.classList.remove("highlight");
+                }
+            });
+        });
+    
+        moleculeNameSearchButton.addEventListener("click", function() {
+            var searchText = moleculeNameSearchInput.value.toLowerCase();
+            if (searchText == "") {
+                removeAllHighlights();
+                return;
+            }
+    
+            var tableRows = tableBody.querySelectorAll("tr");
+            tableRows.forEach(function(row) {
+                var moleculeName = row.querySelector("td:nth-child(2)").textContent.toLowerCase();
+                if (moleculeName.includes(searchText)) {
+                    row.classList.add("highlight");
+                    row.scrollIntoView({ behavior: "smooth", block: "nearest", inline: "start" });
+                } else {
+                    row.classList.remove("highlight");
+                }
+            });
+        });
+    });
+
+</script>
+
+{% endblock %}
+

@@ -1,0 +1,43 @@
+{% extends 'theme/base.html' %}
+
+{% block content %}
+
+<div class="card-body">
+    <h3 class="card-title">Spectrum Filters</h3>
+    <p class="card-text">Step 3: Select Filters</p>
+</div>
+
+<div class="container text-center">
+
+    <p>Selected isotopologues:
+    {% for iso in selected_isos %}
+    {{ iso.html|safe }}
+    {% if not forloop.last %}, {% endif %}
+    {% endfor %}
+    </p>
+
+    <form id="filterForm" method="GET" action="{% url 'linelist:get_data' %}">
+        <p>
+        <label for="numin"><i>ν</i><sub>min</sub> / cm<sup>-1</sup></label>:
+        <input type="text" id="numin" name="numin" value="0"></input>
+        </p>
+        <p>
+        <label for="numax"><i>ν</i><sub>max</sub> / cm<sup>-1</sup></label>:
+        <input type="text" id="numax" name="numax"></input>
+        </p>
+        <p>
+        <label for="T">T / K</label>:
+        <input type="text" id="T" name="T" value="296" required></input>
+        </p>
+
+        {% for iso in selected_isos %}
+        <input hidden name="iso" value="{{ iso.slug }}">
+        {% endfor %}
+
+        <div class="form-group mx-auto form-inline" style="justify-content:center;">
+            <button type="submit" class="form-control mx-sm-3 mb-2 btn btn-primary">Submit</button>
+        </div> 
+    </form>
+</div> 
+
+{% endblock content %}

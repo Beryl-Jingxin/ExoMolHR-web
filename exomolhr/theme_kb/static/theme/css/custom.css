@@ -1,0 +1,27 @@
+body {
+  font-family: "Josefin Sans";
+  font-size: 12pt;
+}
+
+div#banner {
+  color: #dee2e6;
+}
+
+h1#banner-title {
+  font-size: 32pt;
+  padding: 10px 0 0 10px;
+}
+
+h2#banner-subtitle {
+  font-size: 24px;
+  padding: 10px 0 0 10px;
+}
+
+p#banner-credit {
+  font-size: 10pt;
+  text-align: right;
+}
+
+tr.highlight {
+  background-color: #add5a2;
+}
