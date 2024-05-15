@@ -1,0 +1,27 @@
+{% extends 'theme/base.html' %}
+
+{% block extra_js %}
+<script type="text/javascript" crossorigin="anonymous" src="https://cdn.bokeh.org/bokeh/release/bokeh-3.4.1.min.js"></script>
+{% endblock %}
+
+{% block content %}
+
+<div class="card-body">
+    <h3 class="card-title">Spectrum Viewer</h3>
+</div>
+
+<div class="container text-center">
+
+    <p>Selected isotopologues:
+    {% for iso in isos %}
+    {{ iso.html|safe }}
+    {% if not forloop.last %}, {% endif %}
+    {% endfor %}
+    </p>
+
+    {{ bokeh_html|safe }}
+
+</div> 
+
+{% endblock content %}
+
