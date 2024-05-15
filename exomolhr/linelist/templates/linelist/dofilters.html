@@ -26,8 +26,12 @@
         <input type="text" id="numax" name="numax"></input>
         </p>
         <p>
-        <label for="T">T / K</label>:
+        <label for="T"><i>T</i> / K</label>:
         <input type="text" id="T" name="T" value="296" required></input>
+        </p>
+        <p>
+        <label for="Smin"><i>S</i><sub>min</sub> / K</label>:
+        <input type="text" id="Smin" name="Smin" value="1e-40"></input>
         </p>
 
         {% for iso in selected_isos %}

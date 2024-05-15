@@ -50,9 +50,13 @@ def get_data(request):
     numin = float(request.GET.get('numin', 0))
     numax = float(request.GET['numax'])
     T = float(request.GET.get('T'))
+    Smin = request.GET.get('Smin')
+    if not Smin:
+        Smin = 0
+    Smin = float(Smin)
     iso_slugs = request.GET.getlist('iso')
     isos = Isotopologue.objects.filter(slug__in=iso_slugs)
-    result_name, plot_spec_data = calc_spec(numin, numax, T, isos)
+    result_name, plot_spec_data, nlines = calc_spec(numin, numax, T, Smin, isos)
 
     request.session['iso_slugs'] = iso_slugs 
     request.session['plot_spec_data'] = plot_spec_data
@@ -60,7 +64,7 @@ def get_data(request):
     #nu, S, color = get_plot_spec(request, numin, numax)
     bokeh_html = get_bokeh_html(iso_slugs)
 
-    c = {'bokeh_html': bokeh_html, 'isos': isos}
+    c = {'bokeh_html': bokeh_html, 'isos': isos, 'nlines': nlines, 'Smin': Smin}
     return render(request, 'linelist/viewspec.html', c)
 
 def ajax_data(request):
@@ -122,8 +126,8 @@ def get_bokeh_html(iso_slugs):
         frame_height=800,
         title="PLOT",
         tools="box_zoom,wheel_zoom,reset",
-        x_axis_label="X AXIS",
-        y_axis_label="Y AXIS",
+        x_axis_label="Wavenumber (cm-1)",
+        y_axis_label="Mean line strength per bin (cm2.molec-1)",
     )
     fig.toolbar.logo = None
 
@@ -153,7 +157,7 @@ def get_bokeh_html(iso_slugs):
     html = '<div class="bokeh-plot">' + bokeh_script + bokeh_div + "</div>"
     return html
 
-def calc_spec(numin, numax, T, isos):
+def calc_spec(numin, numax, T, Smin, isos):
 
     def calc_S(Q, df):
         # Speed of light (cm.s-1), Planck constant (J.s) and Boltzmann constant (J.K-1).
@@ -170,19 +174,24 @@ def calc_spec(numin, numax, T, isos):
     abundance = 1
 
     plot_spec_data = {}
+    nlines = 0
     for iso in isos:
         hrmeta = HRMeta.objects.get(isotopologue=iso)
         ll_name = settings.DATA_DIR / f"{hrmeta.data_filename}.csv"
         df = pd.read_csv(ll_name)
+        df.drop(df[df['Frequency'] < numin].index, inplace=True)
+        df.drop(df[df['Frequency'] > numax].index, inplace=True)
         Q = hrmeta.get_Q(T)
         df['S'] = calc_S(Q, df)
+        df.drop(df[df['S'] < Smin].index, inplace=True)
+        nlines += len(df)
         plot_spec_data[iso.slug] = bin_spec(df, numin, numax)
 
     # TODO
     output_filename = "test.csv"
     # TODO
     #df.to_csv(settings.RESULTS_DIR / output_filename, header=True, index=False)
-    return output_filename, plot_spec_data
+    return output_filename, plot_spec_data, nlines
 
 def bin_spec(df, numin, numax):
     dnus = [0.1, 1, 10]
@@ -193,13 +202,13 @@ def bin_spec(df, numin, numax):
 
     bins = {dnu: get_bins(dnu) for dnu in dnus}
     cuts = pd.cut(df['Frequency'], bins[dnus[0]], right=False, labels=bins[dnus[0]][:-1])
-    specs = {str(dnus[0]): df['S'].groupby(cuts).sum()}
+    specs = {str(dnus[0]): df['S'].groupby(cuts).sum() / dnus[0]}
 
     cuts = pd.cut(specs[str(dnus[0])].index, bins[dnus[1]], right=False, labels=bins[dnus[1]][:-1])
-    specs[str(dnus[1])] = specs[str(dnus[0])].groupby(cuts).sum().rename_axis('Frequency')
+    specs[str(dnus[1])] = specs[str(dnus[0])].groupby(cuts).sum().rename_axis('Frequency') / dnus[1]
 
     cuts = pd.cut(specs[str(dnus[1])].index, bins[dnus[2]], right=False, labels=bins[dnus[2]][:-1])
-    specs[str(dnus[2])] = specs[str(dnus[1])].groupby(cuts).sum().rename_axis('Frequency')
+    specs[str(dnus[2])] = specs[str(dnus[1])].groupby(cuts).sum().rename_axis('Frequency') / dnus[2]
 
     for dnu in dnus:
         specs[str(dnu)] = {"numin": bins[dnu][0],

@@ -79,6 +79,7 @@
         var tableBody = document.querySelector("#dataTable tbody");
         var tableHeader = document.querySelector("#dataTable thead");
 
+        // Click handler for molecule checkboxes.
         document.querySelectorAll(".molecule-checkbox").forEach(function(checkbox) {
             checkbox.addEventListener("change", function() {
                 var moleculeName = this.value;
@@ -102,8 +103,9 @@
             });
         }
 
+        // Search by molecule formula.
         moleculeSearchButton.addEventListener("click", function() {
-            var searchText = moleculeSearchInput.value.toLowerCase();
+            var searchText = moleculeSearchInput.value;
             if (searchText == "") {
                 removeAllHighlights();
                 return;
@@ -111,8 +113,8 @@
     
             var tableRows = tableBody.querySelectorAll("tr");
             tableRows.forEach(function(row) {
-                var moleculeName = row.querySelector("td:nth-child(2)").textContent.toLowerCase();
-                if (moleculeName.includes(searchText)) {
+                var moleculeFormula = row.querySelector("td:nth-child(1)").textContent;
+                if (moleculeFormula.includes(searchText)) {
                     row.classList.add("highlight");
                     row.scrollIntoView({ behavior: "smooth", block: "nearest", inline: "start" });
                 } else {
@@ -121,6 +123,7 @@
             });
         });
     
+        // Search by molecule name.
         moleculeNameSearchButton.addEventListener("click", function() {
             var searchText = moleculeNameSearchInput.value.toLowerCase();
             if (searchText == "") {

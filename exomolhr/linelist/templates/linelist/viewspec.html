@@ -16,8 +16,11 @@
     {% for iso in isos %}
     {{ iso.html|safe }}
     {% if not forloop.last %}, {% endif %}
-    {% endfor %}
+    {% endfor %}.
     </p>
+    <p>Total number of lines: {{ nlines }}
+    for <i>S</i><sub>min</sub> &gt;= {{ Smin|stringformat:".2g" }} cm<sup>-1</sup>/(molec.cm<sup>-2</sup>)
+    .</p>
 
     {{ bokeh_html|safe }}
 
