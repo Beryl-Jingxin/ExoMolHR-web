@@ -10,7 +10,6 @@ import pandas as pd
 import bokeh.plotting as bp
 from bokeh.embed import components
 from bokeh.models import AjaxDataSource
-from bokeh.models import Legend, LegendItem
 from bokeh.models.callbacks import CustomJS
 from bokeh.palettes import Bright
 
@@ -67,9 +66,16 @@ def get_data(request):
 def ajax_data(request):
     numin = float(request.GET.get('numin', 0))
     numax = float(request.GET.get('numax', 42000))
-    nu, S, color = get_plot_spec(request, numin, numax)
-    print(len(nu), len(S), len(color))
-    response = JsonResponse(dict(x=nu, top=S, color=color))
+    nu, S, color, dnu = get_plot_spec(request, numin, numax)
+    data = {}
+    iso_slugs = request.session['iso_slugs']
+    width = dnu / 2
+    for iso_slug in iso_slugs:
+        data[f"x__{iso_slug}"] = nu[iso_slug]
+        data[f"top__{iso_slug}"] = S[iso_slug]
+        data[f"color__{iso_slug}"] = color[iso_slug]
+        data[f'width__{iso_slug}'] = [width] * len(nu[iso_slug])
+    response = JsonResponse(data)
     response["Access-Control-Allow-Origin"] = "*"
     response["Access-Control-Allow-Methods"] = "GET"
     response["Access-Control-Max-Age"] = "1000"
@@ -87,7 +93,7 @@ def get_plot_spec(request, numin, numax):
     sdnu = str(dnu)
 
     iso_slugs = request.session['iso_slugs']
-    nu, S, color = [], [], []
+    nu, S, color = {}, {}, {}
     colors = cycle(Bright[7])
     for iso_slug in iso_slugs:
         plot_spec_data = request.session['plot_spec_data'][iso_slug]
@@ -98,21 +104,16 @@ def get_plot_spec(request, numin, numax):
         i = max(i, 0)
         j = int((numax - bnumin) / dnu)
         j = min(j, len(isoS)-1)
-        S.extend(isoS[i:j])
+        S[iso_slug] =  isoS[i:j]
         nS = len(isoS[i:j])
         #nu = np.linspace(bnumin, bnumin + dnu*nS, nS)
         isonu = np.linspace(bnumin, bnumin + dnu*(isoN-1), isoN)
-        nu.extend(list(isonu[i:j]))
+        nu[iso_slug] = list(isonu[i:j])
 
         isocolor = next(colors)
-        color.extend([isocolor] * nS)
-    return nu, S, color
+        color[iso_slug] = [isocolor] * nS
 
-def add_legend(fig, iso_slugs, r):
-    legend = Legend(items=[
-        LegendItem(label=iso_slug, renderers=[r], index=i) for i, iso_slug in enumerate(iso_slugs)])
-    fig.add_layout(legend)
-
+    return nu, S, color, dnu
 
 def get_bokeh_html(iso_slugs):
     fig = bp.figure(
@@ -130,8 +131,8 @@ def get_bokeh_html(iso_slugs):
                             data_url=reverse("linelist:ajax_data"),
                             name="ajax_plot_data_source")
 #    fig.line('x', 'y', source=source)
-    r = fig.vbar('x', 'top', color="color", source=source)
-    add_legend(fig, iso_slugs, r)
+    for iso_slug in iso_slugs:
+        r = fig.vbar(x=f'x__{iso_slug}', top=f'top__{iso_slug}', color=f"color__{iso_slug}", width=f'width__{iso_slug}', source=source, legend_label=iso_slug)
 
     callback = CustomJS(args=dict(xr=fig.x_range), code="""
         $.ajax({
