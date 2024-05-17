@@ -10,18 +10,32 @@
     <h3 class="card-title">Spectrum Viewer</h3>
 </div>
 
-<div class="container text-center">
+<div class="container">
+<div class="row">
 
-    <p>Selected isotopologues:
+    <div class="col-md">
+    <p>
+    Selected isotopologues:
     {% for iso in isos %}
     {{ iso.html|safe }}
     {% if not forloop.last %}, {% endif %}
     {% endfor %}.
     </p>
-    <p>Total number of lines: {{ nlines }}
-    for <i>S</i><sub>min</sub> &gt;= {{ Smin|stringformat:".2g" }} cm<sup>-1</sup>/(molec.cm<sup>-2</sup>)
-    .</p>
+    <p>
+    Total number of lines: {{ nlines }}
+    for <i>S</i><sub>min</sub> &gt;= {{ Smin|stringformat:".2g" }} cm<sup>-1</sup>/(molec.cm<sup>-2</sup>).
+    </p>
+    </div>
+    <div class="col-md">
+        <p>This selected line list is available as a downloadable ZIP archive (size {{ archive_size|filesizeformat }}).<br/>
+        <a href="{% url 'linelist:download_archive' %}?archive_name={{ archive_name }}"><button class="btn btn-primary">Download</button></a>
+    </div>
 
+</div> 
+</div> 
+
+<div class="container">
+    <p class="text-muted text-right">Click on legend entries to hide/show the corresponding spectrum.</p>
     {{ bokeh_html|safe }}
 
 </div> 

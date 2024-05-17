@@ -16,31 +16,41 @@
         <p>Selected Isotopologues: <span id="selectedIsotopologues"></span></p>
 
             
-           <div class="row justify-content-center table-responsive table-fixhead">
+           <div class="row justify-content-center table-responsive">
                 <table class="table table-bordered table-hover align-middle mx-auto" id="dataTable" style="width:auto;">
                     <thead>
                         <tr>
                             <th>Molecule</th>
                             <th>Isotopologue</th>
                             <th>Mass (Da)</th>
-                            <th>Choose</th>
+                            <th><input id="select-all" type="checkbox" name="select-all" value="select-all"/></th>
                         </tr>
                     </thead>
 
                     <tbody>
-                        {% for iso in isos %}
+                        {% regroup isos by molecule as molecule_list %}
+                        {% for molecule in molecule_list %}
                         <tr>
-                            <td>{{ iso.molecule.html|safe }}</td>
-                            <td>{{ iso.html|safe }}</td>
-                            <td>{{ iso.mass|stringformat:".3f" }}</td>
-                            <td>
-                                <div class="form-check">
-                                    <input class="form-check-input iso-checkbox" type="checkbox" name="iso" value="{{ iso.slug }}">
-                                    <label class="form-check-label" for="iso"></label>
-                                </div>
-                            </td>               
-                        </tr>
+                            <td rowspan="{{ molecule.list|length }}" style="vertical-align : middle;">
+                                {% if molecule.list|length > 1 %}
+                                    <input id="{{ molecule.grouper.slug }}-checkbox" class="molecule-checkbox" type="checkbox" name="{{ molecule.grouper.slug }}-checkbox" value="{{ molecule.grouper.slug }}"/>
+                                {% endif %}
+                                {{ molecule.grouper.html|safe }}</td>
+                            {% for iso in molecule.list %}
+                                {% if not forloop.first %} 
+                                    <tr>
+                                {% endif %}
+                                <td>{{ iso.html|safe }}</td>
+                                <td>{{ iso.mass|stringformat:".3f" }}</td>
+                                <td>
+                                    <div class="form-check">
+                                        <input class="form-check-input iso-checkbox {{ molecule.grouper.slug }}-checkbox" type="checkbox" name="iso" value="{{ iso.slug }}">
+                                    </div>
+                                </td>               
+                                </tr>
+                            {% endfor %}
                         {% endfor %}
+
                     </tbody>
                 </table>
             </div>
@@ -50,24 +60,139 @@
 
 <script>
     document.addEventListener("DOMContentLoaded", function() {
+        var nisos = {{ nisos }};
+        var nisosSelected = 0;
         var selectedIsotopologues = [];
         var selectedIsotopologuesElement = document.getElementById("selectedIsotopologues");
-    
-        document.querySelectorAll(".iso-checkbox").forEach(function(checkbox) {
-            checkbox.addEventListener("change", function() {
-                var isotopologueName = this.value;
+        var allSelected = false;
+        var moleculeCheckboxes = document.querySelectorAll("input.molecule-checkbox");
+        var isoCheckboxes = document.querySelectorAll("input.iso-checkbox");
+
+        function selectAll() {
+            moleculeCheckboxes.forEach(function(moleculeCheckbox) {
+                moleculeCheckbox.checked = true;
+            });
+            selectedIsotopologues = [];
+            isoCheckboxes.forEach(function(isoCheckbox) {
+                var isotopologueName = isoCheckbox.value;
+                selectedIsotopologues.push(isotopologueName);
+                isoCheckbox.checked = true;
+            });
+            selectedIsotopologuesElement.textContent = selectedIsotopologues.join(", ");
+            nisosSelected = nisos;
+        }
+        function selectNone() {
+            moleculeCheckboxes.forEach(function(moleculeCheckbox) {
+                moleculeCheckbox.checked = false;
+            });
+            selectedIsotopologues = [];
+            isoCheckboxes.forEach(function(isoCheckbox) {
+                isoCheckbox.checked = false;
+            });
+            selectedIsotopologuesElement.textContent = "";
+            nisosSelected = 0;
+        }
+
+        var selectAllCheckBox = document.getElementById("select-all");
+        selectAllCheckBox.addEventListener("change", function() {
+            if (allSelected) {
+                selectNone();
+                allSelected = false;
+            } else {
+                selectAll();
+                allSelected = true;
+            }
+        });
+
+        function selectAllIsotopologuesOfMolecule(molecule_slug) {
+            var moleculeCheckbox = document.getElementById(molecule_slug + "-checkbox");
+            moleculeCheckbox.checked = true;
+            document.querySelectorAll("input." + molecule_slug + "-checkbox").forEach(function(isoCheckbox) {
+                if (!isoCheckbox.checked) {
+                    selectIso(isoCheckbox);
+                }
+            });
+        }
+
+        function deselectAllIsotopologuesOfMolecule(molecule_slug) {
+            var moleculeCheckbox = document.getElementById(molecule_slug + "-checkbox");
+            moleculeCheckbox.checked = false;
+            document.querySelectorAll("input." + molecule_slug + "-checkbox").forEach(function(isoCheckbox) {
+                if (isoCheckbox.checked) {
+                    deselectIso(isoCheckbox);
+                }
+            });
+        }
+
+        moleculeCheckboxes.forEach(function(moleculeCheckbox) {
+            moleculeCheckbox.addEventListener("change", function() {
                 if (this.checked) {
-                    selectedIsotopologues.push(isotopologueName);
-                    selectedIsotopologuesElement.textContent = selectedIsotopologues.join(", ");
+                    selectAllIsotopologuesOfMolecule(this.value);
                 } else {
-                    var index = selectedIsotopologues.indexOf(isotopologueName);
-                    if (index !== -1) {
-                        selectedIsotopologues.splice(index, 1);
-                        selectedIsotopologuesElement.textContent = selectedIsotopologues.join(", ");
-                    }
+                    deselectAllIsotopologuesOfMolecule(this.value);
                 }
             });
         });
+
+        function selectIso(isoCheckbox) {
+                isoCheckbox.checked = true;
+                var isotopologueName = isoCheckbox.value;
+                selectedIsotopologues.push(isotopologueName);
+                selectedIsotopologuesElement.textContent = selectedIsotopologues.join(", ");
+                nisosSelected++;
+                updateSelectAllCheckbox();
+        }
+        function deselectIso(isoCheckbox) {
+                isoCheckbox.checked = false;
+                var isotopologueName = isoCheckbox.value;
+                var index = selectedIsotopologues.indexOf(isotopologueName);
+                if (index !== -1) {
+                    selectedIsotopologues.splice(index, 1);
+                    selectedIsotopologuesElement.textContent = selectedIsotopologues.join(", ");
+                }
+                nisosSelected--;
+                updateSelectAllCheckbox();
+        }
+
+        function updateSelectAllCheckbox() {
+            if (nisos == nisosSelected) {
+                allSelected = true;
+                selectAllCheckBox.checked = true;
+            } else {
+                allSelected = false;
+                selectAllCheckBox.checked = false;
+            }
+        }
+        
+        document.querySelectorAll(".iso-checkbox").forEach(function(isoCheckbox) {
+            isoCheckbox.addEventListener("change", function() {
+                if (this.checked) {
+                    selectIso(isoCheckbox);
+                    updateMoleculeCheckbox(this);
+                } else {
+                    deselectIso(isoCheckbox);
+                    updateMoleculeCheckbox(this);
+                }
+            });
+
+        });
+
+        function updateMoleculeCheckbox(isoCheckbox) {
+            moleculeCheckboxes.forEach(function(moleculeCheckbox) {
+                if (isoCheckbox.classList.contains(moleculeCheckbox.id)) {
+                    thisMoleculesIsoCheckboxes = document.querySelectorAll("input." + moleculeCheckbox.id);
+                    nisosForThisMolecule = thisMoleculesIsoCheckboxes.length;
+                    var nisosSelectedForThisMolecule = 0;
+                    thisMoleculesIsoCheckboxes.forEach(function(moleculeCheckbox) {
+                        if (moleculeCheckbox.checked) {
+                            nisosSelectedForThisMolecule++;
+                        }
+                    });
+                    moleculeCheckbox.checked = (nisosSelectedForThisMolecule == nisosForThisMolecule);
+                }
+            });
+        }
+
     });
 </script>
 

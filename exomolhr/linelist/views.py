@@ -1,7 +1,8 @@
 from itertools import cycle
+from zipfile import ZipFile
 from django.shortcuts import render
 
-from django.http import Http404, JsonResponse
+from django.http import Http404, JsonResponse, HttpResponseRedirect
 from django.urls import reverse
 from django.conf import settings
 
@@ -9,12 +10,13 @@ import numpy as np
 import pandas as pd
 import bokeh.plotting as bp
 from bokeh.embed import components
-from bokeh.models import AjaxDataSource
+from bokeh.models import AjaxDataSource, Range1d
 from bokeh.models.callbacks import CustomJS
 from bokeh.palettes import Bright
 
 from chem.models import Molecule, Isotopologue
 from linelist.models import HRMeta
+from .utils import make_hex_timestamp, make_zip_bundle
 
 def get_linelist(request):
     if request.GET.get('molecule'):
@@ -34,7 +36,7 @@ def select_molecules(request):
 
 def select_isotopologues(request, selected_molecules):
     isos = Isotopologue.objects.filter(molecule__slug__in=selected_molecules)
-    c = {'isos': isos}
+    c = {'isos': isos, 'nisos': isos.count()}
     return render(request, 'linelist/isotopologues.html', c)
 
 
@@ -56,20 +58,34 @@ def get_data(request):
     Smin = float(Smin)
     iso_slugs = request.GET.getlist('iso')
     isos = Isotopologue.objects.filter(slug__in=iso_slugs)
-    result_name, plot_spec_data, nlines = calc_spec(numin, numax, T, Smin, isos)
+    archive_name, archive_size, plot_spec_data, nlines, Smax = calc_spec(numin, numax, T, Smin, isos)
 
     request.session['iso_slugs'] = iso_slugs 
     request.session['plot_spec_data'] = plot_spec_data
+    request.session['numax'] = numax
 
-    #nu, S, color = get_plot_spec(request, numin, numax)
-    bokeh_html = get_bokeh_html(iso_slugs)
+    bokeh_html = get_bokeh_html(iso_slugs, numin, numax, Smax)
 
-    c = {'bokeh_html': bokeh_html, 'isos': isos, 'nlines': nlines, 'Smin': Smin}
+    c = {'bokeh_html': bokeh_html,
+         'isos': isos,
+         'nlines': nlines,
+         'Smin': Smin,
+         'archive_name': archive_name,
+         'archive_size': archive_size}
     return render(request, 'linelist/viewspec.html', c)
+
+def download_archive(request):
+    try:
+        archive_name = request.GET['archive_name']
+    except KeyError:
+        raise Http404
+    archive_url = settings.DATA_URL.rstrip('/') + '/' + archive_name
+    return HttpResponseRedirect(archive_url)
 
 def ajax_data(request):
     numin = float(request.GET.get('numin', 0))
-    numax = float(request.GET.get('numax', 42000))
+    numax = float(request.GET.get('numax', request.session['numax']))
+
     nu, S, color, dnu = get_plot_spec(request, numin, numax)
     data = {}
     iso_slugs = request.session['iso_slugs']
@@ -86,14 +102,16 @@ def ajax_data(request):
     response["Access-Control-Allow-Headers"] = "Content-Type"
     return response
 
-def get_plot_spec(request, numin, numax):
+def get_dnu(numin, numax):
     Dnu = numax - numin
     if Dnu > 10000:
-        dnu = 10
+        return 10
     elif Dnu > 1000:
-        dnu = 1
-    else:
-        dnu = 0.1
+        return 1
+    return 0.1
+
+def get_plot_spec(request, numin, numax):
+    dnu = get_dnu(numin, numax)
     sdnu = str(dnu)
 
     iso_slugs = request.session['iso_slugs']
@@ -119,7 +137,7 @@ def get_plot_spec(request, numin, numax):
 
     return nu, S, color, dnu
 
-def get_bokeh_html(iso_slugs):
+def get_bokeh_html(iso_slugs, numin, numax, Smax):
     fig = bp.figure(
         #y_axis_type="log",
         frame_width=1000,
@@ -131,12 +149,22 @@ def get_bokeh_html(iso_slugs):
     )
     fig.toolbar.logo = None
 
+    fig.x_range = Range1d(numin, numax)
+    fig.y_range = Range1d(0, Smax)
+
     source = AjaxDataSource(method="GET",
                             data_url=reverse("linelist:ajax_data"),
-                            name="ajax_plot_data_source")
+                            name="ajax_plot_data_source",
+                            polling_interval=None)
 #    fig.line('x', 'y', source=source)
     for iso_slug in iso_slugs:
-        r = fig.vbar(x=f'x__{iso_slug}', top=f'top__{iso_slug}', color=f"color__{iso_slug}", width=f'width__{iso_slug}', source=source, legend_label=iso_slug)
+        r = fig.vbar(x=f'x__{iso_slug}',
+                     top=f'top__{iso_slug}',
+                     color=f"color__{iso_slug}",
+                     width=f'width__{iso_slug}',
+                     source=source,
+                     legend_label=iso_slug)
+
 
     callback = CustomJS(args=dict(xr=fig.x_range), code="""
         $.ajax({
@@ -152,6 +180,7 @@ def get_bokeh_html(iso_slugs):
           });
     """)
     fig.x_range.js_on_change('start', callback)
+    fig.legend.click_policy="hide"
 
     bokeh_script, bokeh_div = components(fig)
     html = '<div class="bokeh-plot">' + bokeh_script + bokeh_div + "</div>"
@@ -166,53 +195,70 @@ def calc_spec(numin, numax, T, Smin, isos):
         c2 = h * c / kB
         c2oT = c2 / T
         fac = 1 / (8 * np.pi * c)
-        nu = df['Frequency']
+        nu = df['nu']
         return fac * df["g'"] * df['A'] * np.exp(-c2oT * df['E"']) * (
                 1 - np.exp(-c2oT * nu)) /  nu**2 / Q * abundance
 
     # TODO
     abundance = 1
 
+    filestem = make_hex_timestamp()
     plot_spec_data = {}
     nlines = 0
+    output_files = []
+    Smax = 0
     for iso in isos:
         hrmeta = HRMeta.objects.get(isotopologue=iso)
         ll_name = settings.DATA_DIR / f"{hrmeta.data_filename}.csv"
         df = pd.read_csv(ll_name)
-        df.drop(df[df['Frequency'] < numin].index, inplace=True)
-        df.drop(df[df['Frequency'] > numax].index, inplace=True)
+        df.drop(df[df['nu'] < numin].index, inplace=True)
+        df.drop(df[df['nu'] > numax].index, inplace=True)
         Q = hrmeta.get_Q(T)
-        df['S'] = calc_S(Q, df)
+        df.insert(3, 'S', calc_S(Q, df))
         df.drop(df[df['S'] < Smin].index, inplace=True)
-        nlines += len(df)
-        plot_spec_data[iso.slug] = bin_spec(df, numin, numax)
 
-    # TODO
-    output_filename = "test.csv"
-    # TODO
+        output_filename = f'{filestem}__{iso.slug}__{T}K.csv'
+        df.to_csv(settings.RESULTS_DIR / output_filename, index=False)
+        output_files.append(output_filename)
+
+        nlines += len(df)
+        plot_spec_data[iso.slug], isoSmax = bin_spec(df, numin, numax)
+        Smax = max(Smax, isoSmax)
+
+    output_filename = f"{filestem}.zip"
+    archive_size = make_zip_bundle(output_filename, output_files)
+
     #df.to_csv(settings.RESULTS_DIR / output_filename, header=True, index=False)
-    return output_filename, plot_spec_data, nlines
+    return output_filename, archive_size, plot_spec_data, nlines, Smax
 
 def bin_spec(df, numin, numax):
     dnus = [0.1, 1, 10]
+    sdnus = [str(dnu) for dnu in dnus]
     def get_bins(dnu):
         r = int(-np.log10(dnu))
         bin_numin = round(numin, r)
         return np.arange(bin_numin, numax+dnu, dnu) + dnu / 2
 
     bins = {dnu: get_bins(dnu) for dnu in dnus}
-    cuts = pd.cut(df['Frequency'], bins[dnus[0]], right=False, labels=bins[dnus[0]][:-1])
-    specs = {str(dnus[0]): df['S'].groupby(cuts).sum() / dnus[0]}
+    cuts = pd.cut(df['nu'], bins[dnus[0]], right=False, labels=bins[dnus[0]][:-1])
+    specs = {sdnus[0]: df['S'].groupby(cuts, observed=False).sum() / dnus[0]}
 
-    cuts = pd.cut(specs[str(dnus[0])].index, bins[dnus[1]], right=False, labels=bins[dnus[1]][:-1])
-    specs[str(dnus[1])] = specs[str(dnus[0])].groupby(cuts).sum().rename_axis('Frequency') / dnus[1]
+    cuts = pd.cut(specs[sdnus[0]].index, bins[dnus[1]], right=False, labels=bins[dnus[1]][:-1])
+    specs[sdnus[1]] = specs[sdnus[0]].groupby(cuts, observed=False).sum().rename_axis('nu') / dnus[1]
 
-    cuts = pd.cut(specs[str(dnus[1])].index, bins[dnus[2]], right=False, labels=bins[dnus[2]][:-1])
-    specs[str(dnus[2])] = specs[str(dnus[1])].groupby(cuts).sum().rename_axis('Frequency') / dnus[2]
+    cuts = pd.cut(specs[sdnus[1]].index, bins[dnus[2]], right=False, labels=bins[dnus[2]][:-1])
+    specs[sdnus[2]] = specs[sdnus[1]].groupby(cuts, observed=False).sum().rename_axis('nu') / dnus[2]
+
+    # Store the maximum (averaged) line strength for the initial binning,
+    # corresponding to numin – numin (not zoomed in in the plot).
+    initial_dnu = get_dnu(numin, numax)
+    print("initial_dnu =", initial_dnu)
+    Smax = max(specs[str(initial_dnu)])
+    print("Smax =", Smax)
 
     for dnu in dnus:
         specs[str(dnu)] = {"numin": bins[dnu][0],
                            "S": specs[str(dnu)].values.tolist()}
     #    specs[dnu].to_csv(settings.RESULTS_DIR / f'spec{dnu}.csv', header=True)
-    return specs
+    return specs, Smax
 
