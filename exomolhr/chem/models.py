@@ -3,6 +3,7 @@ import os
 import struct
 from pyvalem.formula import Formula
 
+
 class Molecule(models.Model):
     stoichiometric_formula = models.CharField(max_length=40)
     ordinary_formula = models.CharField(max_length=80, unique=True)
@@ -19,7 +20,7 @@ class Molecule(models.Model):
         return self.ordinary_formula
 
     class Meta:
-        app_label = 'chem'
+        app_label = "chem"
 
 
 class Isotopologue(models.Model):
@@ -28,7 +29,7 @@ class Isotopologue(models.Model):
     html = models.CharField(max_length=256)
     mass = models.FloatField()
     charge = models.SmallIntegerField()
-    molecule = models.ForeignKey('Molecule', on_delete=models.CASCADE)
+    molecule = models.ForeignKey("Molecule", on_delete=models.CASCADE)
     inchi = models.CharField(max_length=200, blank=True)
     inchikey = models.CharField(max_length=27, blank=True)
     abundance = models.FloatField(null=True, blank=True)
@@ -40,4 +41,4 @@ class Isotopologue(models.Model):
         return self.ordinary_formula
 
     class Meta:
-        app_label = 'chem'
+        app_label = "chem"

@@ -4,8 +4,9 @@ from datetime import datetime
 from zipfile import ZipFile
 from django.conf import settings
 
+
 def make_hex_timestamp():
-    """ Return the filestem for output file archives. """
+    """Return the filestem for output file archives."""
 
     if 0 and settings.DEBUG:
         # If we're debugging, use a single filestem, not a timestamp
@@ -17,6 +18,7 @@ def make_hex_timestamp():
     # off the initial '0x' characters:
     filestem = hex(ts_int)[2:]
     return filestem
+
 
 def make_zip_bundle(output_filename, output_files):
     output_filepath = settings.RESULTS_DIR / output_filename
