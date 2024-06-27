@@ -113,6 +113,8 @@ USE_L10N = True
 
 USE_TZ = True
 
+SESSION_COOKIE_NAME = "exomolhrsession"
+
 # Import everything from local_settings.py
 PROJECT_APP_PATH = Path(__file__).resolve().parent
 f = PROJECT_APP_PATH / "local_settings.py"
