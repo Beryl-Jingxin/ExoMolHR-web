@@ -22,6 +22,7 @@ Pipfile.lock
 activate
 activate-dev
 sandpit
+db.sqlite3
 
 # PyCharm IDE
 .idea
