@@ -16,7 +16,7 @@ from bokeh.palettes import Bright
 
 from chem.models import Molecule, Isotopologue
 from linelist.models import HRMeta
-from .utils import make_hex_timestamp, make_zip_bundle
+from .utils import make_decimal_timestamp, make_zip_bundle
 
 
 def get_linelist(request):
@@ -228,7 +228,7 @@ def calc_spec(numin, numax, T, Smin, isos):
     # TODO
     abundance = 1
 
-    filestem = make_hex_timestamp()
+    filestem = make_decimal_timestamp()
     plot_spec_data = {}
     nlines = 0
     output_files = {}

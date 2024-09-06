@@ -19,6 +19,15 @@ def make_hex_timestamp():
     filestem = hex(ts_int)[2:]
     return filestem
 
+def make_decimal_timestamp():
+    """Return a decimal timestamp for output filenames."""
+
+    if 0 and settings.DEBUG:
+        return "test"
+
+    tstamp = datetime.utcnow()
+    return f"{tstamp:%Y%m%d%H%M%S}"
+
 
 def make_zip_bundle(output_filename, output_files):
     output_filepath = settings.RESULTS_DIR / output_filename
