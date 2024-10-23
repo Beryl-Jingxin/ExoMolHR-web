@@ -9,6 +9,8 @@ class HRMeta(models.Model):
     isotopologue = models.ForeignKey(Isotopologue, on_delete=models.CASCADE)
     QNs = models.TextField()
     data_filename = models.CharField(max_length=72)
+    numin = models.FloatField(default=0)
+    numax = models.FloatField(default=100000)
 
     class Meta:
         app_label = "linelist"

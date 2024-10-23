@@ -5,6 +5,7 @@ from django.shortcuts import render
 from django.http import Http404, JsonResponse, HttpResponseRedirect
 from django.urls import reverse
 from django.conf import settings
+from django.utils.datastructures import MultiValueDictKeyError
 
 import numpy as np
 import pandas as pd
@@ -51,8 +52,6 @@ def get_data(request):
     if not request.GET:
         raise Http404
 
-    numin = float(request.GET.get("numin", 0))
-    numax = float(request.GET["numax"])
     T = float(request.GET.get("T"))
     Smin = request.GET.get("Smin")
     if not Smin:
@@ -60,6 +59,43 @@ def get_data(request):
     Smin = float(Smin)
     iso_slugs = request.GET.getlist("iso")
     isos = Isotopologue.objects.filter(slug__in=iso_slugs)
+
+    def get_default_numax(isos):
+        return 100000
+    def get_default_numin(isos):
+        return 0.1
+
+
+    try:
+        numin = request.GET['numin']
+        select_by_wavelength = False
+    except MultiValueDictKeyError:
+        select_by_wavelength = True
+
+    if not select_by_wavelength:
+        if numin.strip() == '':
+            numin = 0
+        else:
+            numin = float(numin)
+        try:
+            numax = float(request.GET["numax"])
+        except ValueError:
+            numax = get_default_numax(isos)
+    else:
+        wvmin = request.GET.get('wvmin', '0').strip()
+        wvmin = float(wvmin)
+        if wvmin == 0:
+            numax = get_default_numax(isos)
+            wvmin = 1.e7 / numax
+        else:
+            numax = 1.e7 / wvmin
+        try:
+            wvmax = float(request.GET["wvmax"].strip())
+            numin = 1.e7 / wvmax
+        except ValueError:
+            numin = get_default_numin(isos)
+            wvmax = 1.e7 / numin
+        
     archive_name, archive_size, plot_spec_data, nlines, Smax = calc_spec(
         numin, numax, T, Smin, isos
     )
@@ -78,6 +114,7 @@ def get_data(request):
         "Smin": Smin,
         "archive_name": archive_name,
         "archive_size": archive_size,
+        "select_by_wavelength": select_by_wavelength,
     }
     return render(request, "linelist/viewspec.html", c)
 
@@ -93,7 +130,10 @@ def download_archive(request):
 
 def ajax_data(request):
     numin = float(request.GET.get("numin", 0))
-    numax = float(request.GET.get("numax", request.session["numax"]))
+    numax = request.GET.get("numax")
+    if numax is None:
+        numax = request.session["numax"]
+    numax = float(numax)
 
     nu, S, color, dnu = get_plot_spec(request, numin, numax)
     data = {}

@@ -1,5 +1,55 @@
 {% extends 'theme/base.html' %}
 
+{% block extra_js %}
+<script>
+    var select_by_wavelength = false;
+    function toggle_wavenumber_wavelength() {
+        if (select_by_wavelength) {
+            // wavelength -> wavenumber
+            document.getElementById("select_by_wavelength").hidden = true;
+            document.getElementById("select_by_wavenumber").hidden = false;
+            document.getElementById("numin").disabled = false;
+            document.getElementById("numax").disabled = false;
+            var wvmin = document.getElementById("wvmin").value.trim();
+            numax = 1.e7 / wvmin;
+            if (!isFinite(numax)) {
+                numax = ''
+            }
+            document.getElementById("numax").value = numax;
+            var wvmax = document.getElementById("wvmax").value.trim();
+            numin = 1.e7 / wvmax;
+            if (!isFinite(numin)) {
+                numin = 0;
+            }
+            document.getElementById("numin").value = numin;
+            document.getElementById("wvmin").disabled = true;
+            document.getElementById("wvmax").disabled = true;
+        } else {
+            // wavenumber -> wavelength
+            document.getElementById("select_by_wavenumber").hidden = true;
+            document.getElementById("select_by_wavelength").hidden = false;
+            document.getElementById("wvmin").disabled = false;
+            document.getElementById("wvmax").disabled = false;
+            var numin = document.getElementById("numin").value.trim();
+            wvmax = 1.e7 / numin;
+            if (!isFinite(wvmax)) {
+                wvmax = ''
+            }
+            document.getElementById("wvmax").value = wvmax;
+            var numax = document.getElementById("numax").value.trim();
+            wvmin = 1.e7 / numax;
+            if (!isFinite(wvmin)) {
+                wvmin = 0;
+            }
+            document.getElementById("wvmin").value = wvmin;
+            document.getElementById("numin").disabled = true;
+            document.getElementById("numax").disabled = true;
+        }
+        select_by_wavelength = !select_by_wavelength;
+    };
+</script>
+{% endblock %}
+
 {% block content %}
 
 <div class="card-body">
@@ -16,7 +66,23 @@
     {% endfor %}
     </p>
 
+    <p class="custom-control custom-switch">
+      <input type="checkbox" class="custom-control-input" id="wavenumber_wavelength_toggle" onchange="toggle_wavenumber_wavelength()">
+      <label class="custom-control-label" for="wavenumber_wavelength_toggle">Select by wavelength, λ / nm</label>
+    </p>
+
     <form id="filterForm" method="GET" action="{% url 'linelist:get_data' %}">
+        <div id="select_by_wavelength" hidden>
+        <p>
+        <label for="wvmin"><i>λ</i><sub>min</sub> / nm</label>:
+        <input type="text" id="wvmin" name="wvmin" value="0"></input>
+        </p>
+        <p>
+        <label for="wvmax"><i>λ</i><sub>max</sub> / nm</label>:
+        <input type="text" id="wvmax" name="wvmax"></input>
+        </p>
+        </div>
+        <div id="select_by_wavenumber">
         <p>
         <label for="numin"><i>ν</i><sub>min</sub> / cm<sup>-1</sup></label>:
         <input type="text" id="numin" name="numin" value="0"></input>
@@ -25,10 +91,13 @@
         <label for="numax"><i>ν</i><sub>max</sub> / cm<sup>-1</sup></label>:
         <input type="text" id="numax" name="numax"></input>
         </p>
+        </div>
+
         <p>
         <label for="T"><i>T</i> / K</label>:
         <input type="text" id="T" name="T" value="296" required></input>
         </p>
+
         <p>
         <label for="Smin"><i>S</i><sub>min</sub> / K</label>:
         <input type="text" id="Smin" name="Smin" value="1e-40"></input>
