@@ -10,9 +10,22 @@ __pycache__
 .DS_Store
 .coverage
 local_settings.py
+geckodriver.log
 .sass-cache
 .mysql-password
+.ipynb_checkpoints
 conf.py
+local_db.sqlite
+Pipfile
+Pipfile.lock
 .venv
 activate
+activate-dev
 sandpit
+db.sqlite3
+
+# PyCharm IDE
+.idea
+
+# Note
+note/

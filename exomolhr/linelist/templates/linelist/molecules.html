@@ -1,0 +1,612 @@
+{% extends 'theme/base.html' %}
+
+{% block content %}
+
+<div class="card-body">
+    <h3 class="card-title" style="font-weight:700; color:#333;">Molecules</h3>
+    <span style="display:inline-block; background: linear-gradient(135deg, #4497ef, #72b6c5); color: white; font-size: 0.8rem; font-weight: 700; padding: 4px 10px; border-radius: 20px; letter-spacing: 1px; text-transform: uppercase; margin-top: 6px; margin-bottom: 6px;">Step 1</span>
+    <p class="card-text text-muted" style="font-size: 1.1rem; margin-top: 8px;">Select molecules</p>
+</div>
+
+<style>
+    /* Modern Glassmorphism & Aesthetics */
+    .controls-container, .table-card {
+        background: linear-gradient(135deg, rgba(255, 255, 255, 0.7), rgba(255, 255, 255, 0.3));s
+        backdrop-filter: blur(15px);
+        -webkit-backdrop-filter: blur(15px);
+        border-radius: 20px;
+        padding: 30px;
+        margin-bottom: 35px;
+        box-shadow: 0 10px 40px 0 rgba(31, 38, 135, 0.1);
+        border: 1px solid rgba(255, 255, 255, 0.5);
+    }
+    
+    .form-control {
+        border-radius: 15px;
+        border: 1px solid #ced4da;
+        padding: 12px 15px;
+        font-size: 1rem;
+        box-shadow: inset 0 2px 4px rgba(0,0,0,0.02);
+        transition: all 0.3s ease;
+    }
+    .form-control:focus {
+        box-shadow: 0 0 0 0.25rem rgba(0, 123, 255, 0.25);
+        border-color: #80bdff;
+    }
+    .btn-custom {
+        border-radius: 15px;
+        font-weight: 600;
+        letter-spacing: 0.5px;
+        transition: all 0.3s ease;
+        box-shadow: 0 4px 10px rgba(0,0,0,0.1);
+    }
+    .btn-custom:hover {
+        transform: translateY(-3px);
+        box-shadow: 0 8px 15px rgba(0,0,0,0.15);
+    }
+    
+    /* Alphabetic Filter Layout */
+    .alpha-filter-wrapper {
+        display: flex;
+        align-items: stretch;
+        justify-content: center;
+        gap: 20px;
+        margin-bottom: 30px;
+    }
+
+    .alpha-btn-all {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        padding: 0 25px;
+        border-radius: 15px;
+        border: none;
+        background: linear-gradient(145deg, #ffffff, #e6e6e6);
+        color: #495057;
+        font-weight: 800;
+        font-size: 1.2rem;
+        cursor: pointer;
+        transition: all 0.3s ease;
+        box-shadow: 0 4px 15px rgba(0,0,0,0.05);
+        height: 96px; /* explicitly fits 2 rows of letters + gap */
+    }
+    .alpha-btn-all:hover, .alpha-btn-all.active {
+        background: #4497efff;
+        color: white;
+        transform: scale(1.05);
+        box-shadow: 0 8px 20px rgba(0,123,255,0.4);
+    }
+
+    .alpha-letters-grid {
+        display: flex;
+        flex-wrap: wrap;
+        justify-content: center;
+        gap: 12px;
+        max-width: 780px;
+    }
+
+    .alpha-btn {
+        width: 42px;
+        height: 42px;
+        border-radius: 10px;
+        border: none;
+        background: white;
+        color: #495057;
+        font-weight: 700;
+        font-size: 1.1rem;
+        cursor: pointer;
+        transition: all 0.2s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+        display:flex;
+        align-items: center;
+        justify-content: center;
+        box-shadow: 0 2px 8px rgba(0,0,0,0.06);
+    }
+    .alpha-btn:hover {
+        transform: translateY(-4px) scale(1.1);
+        background: #f8f9fa;
+        color: #4497efff;
+        box-shadow: 0 8px 15px rgba(0,0,0,0.1);
+    }
+    .alpha-btn.active {
+        background: #4497efff;
+        color: white;
+        transform: translateY(-2px) scale(1.1);
+        box-shadow: 0 8px 15px rgba(0,123,255,0.3);
+    }
+
+    /* Table Enhancements */
+    .table-container {
+        padding: 0;
+    }
+    .table-wrapper-fix {
+        border-radius: 15px;
+        border: 2px solid #8bbd65;
+        background: rgba(255, 255, 255, 0.8);
+        box-shadow: 0 4px 6px rgba(0,0,0,0.05);
+        overflow-x: auto;
+        overflow-y: auto;
+        max-height: 550px;
+    }
+    
+    .table-custom {
+        background: transparent;
+        font-family: 'Josefin Sans', sans-serif;
+        font-size: 1.1rem;
+        width: 100%;
+        min-width: 900px;
+        margin: 0 auto;
+        border-collapse: separate;
+        border-spacing: 0;
+    }
+    .table-custom thead th {
+        border-bottom: 2px solid rgba(0,0,0,0.05);
+        background: #8bbd65;
+        font-weight: 800;
+        color: white;
+        letter-spacing: 1px;
+        padding: 20px 15px;
+        position: sticky;
+        top: 0;
+        z-index: 10;
+        text-align: center;
+        vertical-align: middle;
+    }
+    
+    .table-custom thead th.col-divider {
+        border-right: 2px solid rgba(255,255,255,0.4);
+    }
+    
+    .table-custom tbody td {
+        padding: 15px;
+        vertical-align: middle;
+        text-align: center;
+        border-bottom: 1px solid rgba(0,0,0,0.03);
+    }
+    
+    .table-custom tbody td.col-divider {
+        border-right: 2px solid rgba(0,0,0,0.1);
+    }
+    
+    .table-custom tbody tr:last-child td {
+        border-bottom: none;
+    }
+    
+    .table-custom tbody tr {
+        transition: background-color 0.2s ease;
+        animation: fadeInRow 0.5s ease-out forwards;
+        opacity: 0;
+        background-color: transparent;
+    }
+    
+    /* Staggered animation delay for rows */
+    .table-custom tbody tr:nth-child(1) { animation-delay: 0.05s; }
+    .table-custom tbody tr:nth-child(2) { animation-delay: 0.1s; }
+    .table-custom tbody tr:nth-child(3) { animation-delay: 0.15s; }
+    .table-custom tbody tr:nth-child(4) { animation-delay: 0.2s; }
+    .table-custom tbody tr:nth-child(5) { animation-delay: 0.25s; }
+    .table-custom tbody tr:nth-child(n+6) { opacity: 1; animation: none; }
+
+    .table-custom tbody tr:hover {
+        background-color: #afdae4c6 !important;
+    }
+
+    /* Checkbox Fix */
+    .checkbox-wrapper {
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        height: 100%;
+    }
+    .molecule-checkbox, #select-all {
+        appearance: none;
+        -webkit-appearance: none;
+        width: 22px;
+        height: 22px;
+        border: 2px solid #adb5bd;
+        border-radius: 4px;
+        background-color: white;
+        display: inline-block;
+        position: relative;
+        cursor: pointer;
+        transition: all 0.2s ease;
+        margin: 0;
+        vertical-align: middle;
+    }
+    .molecule-checkbox:checked, #select-all:checked {
+        background-color: #6fbd8f;
+        border-color: #6fbd8f;
+    }
+    .molecule-checkbox:checked::after, #select-all:checked::after {
+        content: '';
+        position: absolute;
+        left: 6px;
+        top: 2px;
+        width: 6px;
+        height: 12px;
+        border: solid white;
+        border-width: 0 2px 2px 0;
+        transform: rotate(45deg);
+    }
+    
+    .btn-submit {
+        background: #4497efff;
+        color: white;
+        border: none;
+        border-radius: 15px;
+        font-weight: 800;
+        font-size: 1.3rem;
+        height: 96px;
+        width: 140px;
+        letter-spacing: 1px;
+        box-shadow: 0 8px 20px rgba(0, 123, 255, 0.4);
+        transition: all 0.3s ease;
+        text-transform: uppercase;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        position: relative;
+        overflow: hidden;
+    }
+    .btn-submit:hover {
+        transform: translateY(-4px) scale(1.05);
+        box-shadow: 0 12px 25px rgba(0, 123, 255, 0.6);
+        color: white;
+    }
+    
+    @keyframes fadeInRow {
+        from { opacity: 0; transform: translateY(15px); }
+        to { opacity: 1; transform: translateY(0); }
+    }
+    
+    /* Dynamic Grid Layout for Selected Molecules */
+    .selected-molecules-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, var(--col-width, 80px));
+        gap: 10px 25px;
+        align-items: center;
+        color: #007bff;
+        font-weight: normal;
+        margin-top: 10px;
+    }
+
+    .controls-bottom-row {
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        margin-top: 15px;
+    }
+
+    .btn-action-sm {
+        background: #72b6c5;
+        color: white;
+        border: none;
+        border-radius: 10px;
+        font-weight: 600;
+        font-size: 0.9rem;
+        padding: 8px 20px;
+        letter-spacing: 0.5px;
+        box-shadow: 0 4px 12px rgba(114, 182, 197, 0.3);
+        transition: all 0.3s ease;
+        cursor: pointer;
+    }
+    .btn-action-sm:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 6px 16px rgba(114, 182, 197, 0.5);
+        color: white;
+    }
+</style>
+
+<div class="container text-center">
+
+    <form id="moleculeForm" method="GET" action="{% url 'linelist:get_linelist' %}">
+
+        <!-- Controls Container -->
+        <div class="controls-container mx-auto" style="max-width: 1000px;">
+            
+            <!-- Alphabetic Filter -->
+            <div class="alpha-filter-wrapper align-items-center" id="alphaFilter">
+                <button type="button" class="alpha-btn-all alpha-btn active" data-letter="ALL">All</button>
+                <div class="alpha-letters-grid">
+                    <button type="button" class="alpha-btn" data-letter="A">A</button>
+                    <button type="button" class="alpha-btn" data-letter="B">B</button>
+                    <button type="button" class="alpha-btn" data-letter="C">C</button>
+                    <button type="button" class="alpha-btn" data-letter="D">D</button>
+                    <button type="button" class="alpha-btn" data-letter="E">E</button>
+                    <button type="button" class="alpha-btn" data-letter="F">F</button>
+                    <button type="button" class="alpha-btn" data-letter="G">G</button>
+                    <button type="button" class="alpha-btn" data-letter="H">H</button>
+                    <button type="button" class="alpha-btn" data-letter="I">I</button>
+                    <button type="button" class="alpha-btn" data-letter="J">J</button>
+                    <button type="button" class="alpha-btn" data-letter="K">K</button>
+                    <button type="button" class="alpha-btn" data-letter="L">L</button>
+                    <button type="button" class="alpha-btn" data-letter="M">M</button>
+                    
+                    <button type="button" class="alpha-btn" data-letter="N">N</button>
+                    <button type="button" class="alpha-btn" data-letter="O">O</button>
+                    <button type="button" class="alpha-btn" data-letter="P">P</button>
+                    <button type="button" class="alpha-btn" data-letter="Q">Q</button>
+                    <button type="button" class="alpha-btn" data-letter="R">R</button>
+                    <button type="button" class="alpha-btn" data-letter="S">S</button>
+                    <button type="button" class="alpha-btn" data-letter="T">T</button>
+                    <button type="button" class="alpha-btn" data-letter="U">U</button>
+                    <button type="button" class="alpha-btn" data-letter="V">V</button>
+                    <button type="button" class="alpha-btn" data-letter="W">W</button>
+                    <button type="button" class="alpha-btn" data-letter="X">X</button>
+                    <button type="button" class="alpha-btn" data-letter="Y">Y</button>
+                    <button type="button" class="alpha-btn" data-letter="Z">Z</button>
+                </div>
+            </div>
+
+            <div style="display:flex; justify-content: space-between; align-items: center; gap: 20px; flex-wrap: wrap;">
+                <div class="btn-action-sm" style="visibility: hidden;">← Back to Molecules</div>
+                <div style="display:flex; align-items: center; gap: 20px; flex-wrap: wrap; justify-content: center; flex: 1 1 auto;">
+                    <div style="display:flex; flex-direction:column; gap: 10px;">
+                        <div class="form-group mb-0 form-inline" style="justify-content:center;">
+                            <input type="search" id="moleculeSearchInput" class="form-control mx-sm-3" style="width: 200px;" placeholder="Search by Formula">
+                            <button type="button" id="moleculeSearchButton" class="btn btn-outline-success btn-custom">Search</button>
+                        </div>
+                        <div class="form-group mb-0 form-inline" style="justify-content:center;">
+                            <input type="search" id="moleculeNameSearchInput" class="form-control mx-sm-3" style="width: 200px;" placeholder="Search by Name">
+                            <button type="button" id="moleculeNameSearchButton" class="btn btn-outline-success btn-custom">Search</button>
+                        </div>
+                    </div>
+                    <div>
+                        <button type="submit" class="btn-submit" id="mainSubmitBtn" onclick="if(document.querySelectorAll('.molecule-checkbox:checked').length===0){event.preventDefault();location.reload();}">Submit</button>
+                    </div>
+                </div>
+                <button type="button" id="clearSelectionBtn" class="btn-action-sm">Refresh Selection ↻</button>
+            </div>
+        </div>   
+
+        <div class="table-card mx-auto" style="max-width: 1000px;">
+            <div style="text-align: center; margin-bottom: 20px;">
+                <p class="font-weight-bold mb-0" style="font-size: 1.15rem; color:#495057;">
+                    Selected (<span id="selectedCount" style="color:#6fbd8f; font-weight:800;">0</span>)
+                </p>
+                <div id="selectedMolecules" class="selected-molecules-grid" style="justify-content: center;"></div>
+            </div>
+
+            <div class="table-container">
+                <div class="table-responsive table-fixhead table-wrapper-fix">
+                    <table class="table align-middle mx-auto table-custom" id="dataTable">
+                        <thead>
+                            <tr>
+                                <th class="col-divider">MOLECULE</th>
+                                <th>MOLECULE NAME</th>
+                                <th>MASS (Da)</th>
+                                <th class="text-center" style="vertical-align: middle;">
+                                    <label for="select-all" class="d-block mb-1" style="font-size: 0.85rem; cursor:pointer;">SELECT ALL</label>
+                                    <div class="checkbox-wrapper">
+                                        <input id="select-all" type="checkbox" name="select-all" value="select-all"/>
+                                    </div>
+                                </th>
+                            </tr>
+                        </thead>
+
+                        <tbody>
+                            {% for molecule in molecules %}
+                            <tr>
+                                <td class="font-weight-bold col-divider" style="font-size: 1.25rem;">{{ molecule.html|safe }}</td>
+                                <td>{{ molecule.names }}</td>  
+                                <td class="text-muted font-weight-bold">{{ molecule.mass|stringformat:".3f" }}</td>
+                                <td class="text-center" style="vertical-align: middle;">
+                                    <div class="checkbox-wrapper">
+                                        <input class="molecule-checkbox" type="checkbox" name="molecule" value="{{ molecule.slug }}">
+                                    </div>
+                                </td>               
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </form>
+</div>  
+
+
+
+
+
+
+<script>
+
+    document.addEventListener("DOMContentLoaded", function(){
+        var selectedMolecules = [];
+        var selectedMoleculesElement = document.getElementById("selectedMolecules");
+        var moleculeSearchInput = document.getElementById("moleculeSearchInput");
+        var moleculeSearchButton = document.getElementById("moleculeSearchButton");
+        var moleculeNameSearchInput = document.getElementById("moleculeNameSearchInput");
+        var moleculeNameSearchButton = document.getElementById("moleculeNameSearchButton");
+        var tableBody = document.querySelector("#dataTable tbody");
+        var tableHeader = document.querySelector("#dataTable thead");
+
+        var selectAllCheckbox = document.getElementById("select-all");
+        var alphaButtons = document.querySelectorAll(".alpha-btn");
+
+        // Format _p text to superscript in the table
+        var allRows = tableBody.querySelectorAll("tr");
+        allRows.forEach(function(row) {
+            var formulaElem = row.querySelector("td:first-child");
+            if (formulaElem && formulaElem.innerHTML.includes("_p")) {
+                formulaElem.innerHTML = formulaElem.innerHTML.replace(/_p/g, '<sup>+</sup>');
+            }
+        });
+
+        var selectedCountElement = document.getElementById("selectedCount");
+        var clearSelectionBtn = document.getElementById("clearSelectionBtn");
+
+        function updateSelectionDisplay() {
+            selectedCountElement.textContent = selectedMolecules.length;
+            if (selectedMolecules.length === 0) {
+                selectedMoleculesElement.innerHTML = "";
+                selectedMoleculesElement.style.display = "block"; // reset to block for "None"
+            } else {
+                // Sort selected molecules alphabetically by their clean text representation
+                selectedMolecules.sort(function(a, b) {
+                    var textA = a.html.replace(/<[^>]*>?/gm, '');
+                    var textB = b.html.replace(/<[^>]*>?/gm, '');
+                    return textA.localeCompare(textB);
+                });
+
+                selectedMoleculesElement.style.display = "grid";
+                selectedMoleculesElement.innerHTML = selectedMolecules.map(m => `<span>${m.html}</span>`).join("");
+
+                // Measure widest span and set uniform column width
+                var spans = selectedMoleculesElement.querySelectorAll('span');
+                var maxW = 0;
+                spans.forEach(function(s) { if (s.offsetWidth > maxW) maxW = s.offsetWidth; });
+                selectedMoleculesElement.style.setProperty('--col-width', maxW + 'px');
+            }
+        }
+
+        clearSelectionBtn.addEventListener("click", function() {
+            selectedMolecules = [];
+            tableBody.querySelectorAll(".molecule-checkbox").forEach(function(checkbox) {
+                checkbox.checked = false;
+            });
+            selectAllCheckbox.checked = false;
+            updateSelectionDisplay();
+        });
+
+        function updateSelectAllCheckbox() {
+            var visibleMolecules = tableBody.querySelectorAll("tr:not([style*='display: none']) .molecule-checkbox");
+            if (visibleMolecules.length === 0) {
+                selectAllCheckbox.checked = false;
+                return;
+            }
+            var allChecked = true;
+            visibleMolecules.forEach(function(checkbox) {
+                if (!checkbox.checked) allChecked = false;
+            });
+            selectAllCheckbox.checked = allChecked;
+        }
+
+        // Toggle all visible checkboxes
+        selectAllCheckbox.addEventListener("change", function() {
+            var isChecked = this.checked;
+            var visibleMolecules = tableBody.querySelectorAll("tr:not([style*='display: none']) .molecule-checkbox");
+            
+            visibleMolecules.forEach(function(checkbox) {
+                if (checkbox.checked !== isChecked) {
+                    checkbox.checked = isChecked;
+                    // manually trigger change event properly
+                    checkbox.dispatchEvent(new Event('change')); 
+                }
+            });
+        });
+
+        // Click handler for molecule checkboxes.
+        document.querySelectorAll(".molecule-checkbox").forEach(function(checkbox) {
+            checkbox.addEventListener("change", function() {
+                var moleculeName = this.value;
+                var htmlContent = this.closest('tr').querySelector('td:first-child').innerHTML.trim();
+                
+                if (this.checked) {
+                    if (!selectedMolecules.some(m => m.slug === moleculeName)) {
+                        selectedMolecules.push({ slug: moleculeName, html: htmlContent });
+                    }
+                } else {
+                    var index = selectedMolecules.findIndex(m => m.slug === moleculeName);
+                    if (index !== -1) {
+                        selectedMolecules.splice(index, 1);
+                    }
+                }
+                updateSelectionDisplay();
+                updateSelectAllCheckbox();
+            });
+        });
+
+        // Function to filter table rows based on logic
+        function filterTable() {
+            var formulaSearch = moleculeSearchInput.value.trim().toLowerCase();
+            var nameSearch = moleculeNameSearchInput.value.trim().toLowerCase();
+            var activeAlphaBtn = document.querySelector(".alpha-btn.active");
+            var alphaFilter = activeAlphaBtn ? activeAlphaBtn.getAttribute("data-letter") : "ALL";
+
+            var tableRows = tableBody.querySelectorAll("tr");
+            var matchFound = false;
+
+            tableRows.forEach(function(row) {
+                var formulaElem = row.querySelector("td:nth-child(1)");
+                var nameElem = row.querySelector("td:nth-child(2)");
+                
+                // Get text content, clean it up 
+                var formulaText = formulaElem ? formulaElem.textContent.trim() : "";
+                var nameText = nameElem ? nameElem.textContent.trim().toLowerCase() : "";
+                var firstLetter = formulaText.length > 0 ? formulaText.charAt(0).toUpperCase() : "";
+
+                var showRow = true;
+
+                // 1. Alpha Filter
+                if (alphaFilter !== "ALL" && firstLetter !== alphaFilter) {
+                    showRow = false;
+                }
+
+                // 2. Formula Search (exact or partial depending on length)
+                if (showRow && formulaSearch !== "") {
+                    if (!formulaText.toLowerCase().includes(formulaSearch)) {
+                        showRow = false;
+                    }
+                }
+
+                // 3. Name Search
+                if (showRow && nameSearch !== "") {
+                    if (!nameText.includes(nameSearch)) {
+                        showRow = false;
+                    }
+                }
+
+                // Apply visibility
+                if (showRow) {
+                    row.style.display = "";
+                    matchFound = true;
+                } else {
+                    row.style.display = "none";
+                }
+            });
+
+            // Update Validation styling
+            if (formulaSearch !== "" && !matchFound) {
+                moleculeSearchInput.classList.add("is-invalid");
+                moleculeSearchInput.style.borderColor = "#dc3545";
+            } else {
+                moleculeSearchInput.classList.remove("is-invalid");
+                moleculeSearchInput.style.borderColor = "";
+            }
+
+            if (nameSearch !== "" && !matchFound) {
+                moleculeNameSearchInput.classList.add("is-invalid");
+                moleculeNameSearchInput.style.borderColor = "#dc3545";
+            } else {
+                moleculeNameSearchInput.classList.remove("is-invalid");
+                moleculeNameSearchInput.style.borderColor = "";
+            }
+
+            updateSelectAllCheckbox();
+        }
+
+        // Alphabetic quick-filter click handlers
+        alphaButtons.forEach(function(btn) {
+            btn.addEventListener("click", function() {
+                // remove active class from all
+                alphaButtons.forEach(b => b.classList.remove("active"));
+                // add to clicked
+                this.classList.add("active");
+                filterTable();
+            });
+        });
+
+        // Search Handlers
+        moleculeSearchButton.addEventListener("click", filterTable);
+        moleculeNameSearchButton.addEventListener("click", filterTable);
+        
+        // Dynamic search as typing
+        moleculeSearchInput.addEventListener("input", filterTable);
+        moleculeNameSearchInput.addEventListener("input", filterTable);
+    });
+
+</script>
+
+{% endblock %}
+

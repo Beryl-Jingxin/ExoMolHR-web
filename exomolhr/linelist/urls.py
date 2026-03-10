@@ -1,19 +1,17 @@
 from django.urls import path
-from django.urls import re_path
-
 
 from . import views
 
+app_name = "linelist"
 urlpatterns = [
-    # path('', views.home.as_view()),
-    # path('', views.home, name='home'),
-    path('', views.molecule, name='molecule'),
-    path('<str:molecule>', views.isotopologue, name='isotopologue'),
-    path('<str:molecule>/<str:isotopologue>', views.dataset, name='dataset'),
-    path('<str:molecule>/<str:isotopologue>/<str:dataset>', views.species, name='species'),
-    path('download/<str:molecule>/<str:isotopologue>/<str:dataset>/', views.download_localfile, name='localcsv'),
-
-    # path('search/', views.search, name='search'),
-    # path('results/', views.results, name='results'),
-    # path('download/', views.download, name='search_results_download'),
+    path("", views.home, name="home"),
+    path("qn/", views.qnlabel, name="qnlabel"),
+    path("about/", views.about, name="about"),
+    path("citation/", views.citation, name="citation"),
+    path("updates/", views.updates, name="updates"),
+    path("db/", views.get_linelist, name="get_linelist"),
+    path("pf/<str:pf_filename>/", views.view_pf, name="view_pf"),
+    path("get-data/", views.get_data, name="get_data"),
+    path("get-data/ajax-data", views.ajax_data, name="ajax_data"),
+    path("get-data/download/", views.download_archive, name="download_archive"),
 ]

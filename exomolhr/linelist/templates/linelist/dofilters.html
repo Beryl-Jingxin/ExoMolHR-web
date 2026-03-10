@@ -1,0 +1,1389 @@
+{% extends 'theme/base.html' %}
+
+{% block extra_js %}
+<script>
+    var select_by_wavelength = false;
+
+    function toggle_wavenumber_wavelength() {
+        var toggleTrack = document.getElementById('toggleTrack');
+        var nuLabel = document.getElementById('nuLabel');
+        var wvLabel = document.getElementById('wvLabel');
+        var nuSection = document.getElementById('select_by_wavenumber');
+        var wvSection = document.getElementById('select_by_wavelength');
+
+        if (select_by_wavelength) {
+            // wavelength -> wavenumber
+            wvSection.style.opacity = '0';
+            wvSection.style.transform = 'translateX(20px)';
+            setTimeout(function() {
+                wvSection.hidden = true;
+                nuSection.hidden = false;
+                nuSection.style.opacity = '0';
+                nuSection.style.transform = 'translateX(-20px)';
+                setTimeout(function() {
+                    nuSection.style.opacity = '1';
+                    nuSection.style.transform = 'translateX(0)';
+                }, 20);
+            }, 250);
+
+            document.getElementById("numin").disabled = false;
+            document.getElementById("numax").disabled = false;
+            var wvmin = document.getElementById("wvmin").value.trim();
+            var numax = 1.e7 / wvmin;
+            if (!isFinite(numax)) { numax = ''; }
+            document.getElementById("numax").value = numax;
+            var wvmax = document.getElementById("wvmax").value.trim();
+            var numin = 1.e7 / wvmax;
+            if (!isFinite(numin)) { numin = 0; }
+            document.getElementById("numin").value = numin;
+            document.getElementById("wvmin").disabled = true;
+            document.getElementById("wvmax").disabled = true;
+
+            toggleTrack.classList.remove('active');
+            nuLabel.classList.add('active');
+            wvLabel.classList.remove('active');
+
+            // Update sliders to wavenumber mode
+            updateSlidersFromInputs();
+        } else {
+            // wavenumber -> wavelength
+            nuSection.style.opacity = '0';
+            nuSection.style.transform = 'translateX(-20px)';
+            setTimeout(function() {
+                nuSection.hidden = true;
+                wvSection.hidden = false;
+                wvSection.style.opacity = '0';
+                wvSection.style.transform = 'translateX(20px)';
+                setTimeout(function() {
+                    wvSection.style.opacity = '1';
+                    wvSection.style.transform = 'translateX(0)';
+                }, 20);
+            }, 250);
+
+            document.getElementById("wvmin").disabled = false;
+            document.getElementById("wvmax").disabled = false;
+            var numin2 = document.getElementById("numin").value.trim();
+            var wvmax2 = 1.e7 / numin2;
+            if (!isFinite(wvmax2)) { wvmax2 = ''; }
+            document.getElementById("wvmax").value = wvmax2;
+            var numax2 = document.getElementById("numax").value.trim();
+            var wvmin2 = 1.e7 / numax2;
+            if (!isFinite(wvmin2)) { wvmin2 = 0; }
+            document.getElementById("wvmin").value = wvmin2;
+            document.getElementById("numin").disabled = true;
+            document.getElementById("numax").disabled = true;
+
+            toggleTrack.classList.add('active');
+            nuLabel.classList.remove('active');
+            wvLabel.classList.add('active');
+
+            // Update sliders to wavelength mode
+            updateSlidersFromInputs();
+        }
+        select_by_wavelength = !select_by_wavelength;
+    };
+</script>
+{% endblock %}
+
+{% block content %}
+
+<div class="card-body">
+    <h3 class="card-title" style="font-weight:700; color:#333;">Spectrum Filters</h3>
+    <span style="display:inline-block; background: linear-gradient(135deg, #4497ef, #72b6c5); color: white; font-size: 0.8rem; font-weight: 700; padding: 4px 10px; border-radius: 20px; letter-spacing: 1px; text-transform: uppercase; margin-top: 6px; margin-bottom: 6px;">Step 3</span>
+    <p class="card-text text-muted" style="font-size: 1.1rem; margin-top: 8px;">Set the spectral range, temperature, and intensity threshold for your query</p>
+</div>
+
+<style>
+    /* ===== Layout ===== */
+    .dofilters-wrapper {
+        display: flex;
+        gap: 30px;
+        max-width: 1200px;
+        margin: 30px auto;
+        align-items: stretch;
+    }
+
+    /* ===== Left Panel ===== */
+    .panel-left {
+        flex: 0 0 520px;
+        background: linear-gradient(135deg, rgba(255,255,255,0.7), rgba(255,255,255,0.3));
+        backdrop-filter: blur(15px);
+        -webkit-backdrop-filter: blur(15px);
+        border-radius: 20px;
+        box-shadow: 0 10px 40px 0 rgba(31,38,135,0.1);
+        border: 1px solid rgba(255,255,255,0.5);
+        padding: 22px 22px;
+        display: flex;
+        flex-direction: column;
+        overflow: hidden;
+    }
+
+    .panel-left-title {
+        font-family: 'Josefin Sans', sans-serif;
+        font-size: 1.3rem;
+        font-weight: 800;
+        color: #2c3e50;
+        letter-spacing: 0.5px;
+        margin-bottom: 8px;
+        text-align: center;
+    }
+
+    .panel-left-subtitle {
+        font-family: 'Josefin Sans', sans-serif;
+        font-size: 0.85rem;
+        color: #6c757d;
+        text-align: center;
+        margin-bottom: 20px;
+    }
+
+    /* ===== Isotopologue Table ===== */
+    .iso-table-wrapper {
+        flex: 1;
+        overflow-y: auto;
+        overflow-x: hidden;
+        min-height: 0;
+        max-height: 420px;
+        min-width: 400px;
+        margin-bottom: 15px;
+        border-radius: 12px;
+        border: 1px solid #dee2e6;
+    }
+    .iso-table-wrapper::-webkit-scrollbar {
+        width: 6px;
+    }
+    .iso-table-wrapper::-webkit-scrollbar-track {
+        background: rgba(0,0,0,0.03);
+        border-radius: 0 0 3px 0;
+        margin-top: 32px;
+        margin-bottom: 5px;
+    }
+    .iso-table-wrapper::-webkit-scrollbar-thumb {
+        background: rgba(68,151,239,0.3);
+        border-radius: 3px;
+    }
+
+    .iso-table {
+        width: 100%;
+        border-collapse: collapse;
+        font-family: 'Josefin Sans', sans-serif;
+        font-size: 0.82rem;
+    }
+    .iso-table thead th {
+        position: sticky;
+        top: 0;
+        z-index: 2;
+        background: linear-gradient(135deg, #4497ef, #72b6c5);
+        color: white;
+        font-weight: 700;
+        font-size: 0.72rem;
+        letter-spacing: 0.5px;
+        padding: 8px 10px;
+        text-align: center;
+        white-space: nowrap;
+        height: 32px;
+        box-sizing: border-box;
+    }
+    .iso-table thead th:first-child {
+        text-align: left;
+        padding-left: 14px;
+        border-top-left-radius: 12px;
+    }
+    .iso-table thead th:last-child {
+        /* keeping sticky position */
+    }
+    .iso-table thead th:last-child::after {
+        content: '';
+        position: absolute;
+        top: 0;
+        right: -6px;
+        bottom: 0;
+        width: 6px;
+        background: #72b6c5;
+    }
+    
+    .sortable-header {
+        cursor: pointer;
+        user-select: none;
+        position: relative;
+        padding-right: 20px !important;
+        transition: filter 0.2s ease;
+    }
+    .sortable-header:hover {
+        filter: brightness(0.95);
+    }
+    .sortable-header:active {
+        filter: brightness(0.9);
+    }
+    .sort-icon {
+        position: absolute;
+        right: 5px;
+        top: 50%;
+        transform: translateY(-50%);
+        font-size: 0.65rem;
+        opacity: 0.8;
+        display: flex;
+        flex-direction: column;
+        line-height: 1;
+        color: rgba(255,255,255,0.8);
+    }
+    .sortable-header.asc .sort-icon .up {
+        opacity: 1;
+        color: white; 
+    }
+    .sortable-header.desc .sort-icon .down {
+        opacity: 1;
+        color: white;
+    }
+    .sortable-header.asc .sort-icon .down { opacity: 0.3; }
+    .sortable-header.desc .sort-icon .up { opacity: 0.3; }
+
+    .iso-table tbody tr {
+        cursor: pointer;
+        transition: all 0.25s ease;
+        border-bottom: 1px solid rgba(0,0,0,0.04);
+    }
+    .iso-table tbody tr:hover {
+        background: rgba(68,151,239,0.06);
+    }
+    .iso-table tbody tr.deselected {
+        opacity: 0.3;
+        background: #f1f3f5;
+        filter: grayscale(100%);
+    }
+    .iso-table tbody tr.deselected:hover {
+        opacity: 0.6;
+    }
+    .iso-table tbody td {
+        padding: 9px 10px;
+        text-align: center;
+        vertical-align: middle;
+    }
+    .iso-table tbody td:first-child {
+        text-align: left;
+        padding-left: 14px;
+    }
+    .iso-table .td-formula {
+        font-weight: 600;
+        color: #2c3e50;
+        font-size: 0.88rem;
+    }
+    .iso-table .td-tmax {
+        color: #27ae60;
+        font-weight: 700;
+        font-variant-numeric: tabular-nums;
+    }
+    .iso-table .td-vrange {
+        color: #6c757d;
+        font-variant-numeric: tabular-nums;
+        font-size: 0.78rem;
+    }
+    .td-vrange-container {
+        display: grid;
+        grid-template-columns: 42% 10% 43% 5%;
+        align-items: center;
+        width: 100%;
+    }
+    .vrange-min-wrapper {
+        text-align: right;
+    }
+    .vrange-min {
+    }
+    .vrange-dash {
+        text-align: right;
+    }
+    .vrange-max-wrapper {
+        text-align: right;
+    }
+    .vrange-max {
+    }
+    .iso-table .td-status {
+        width: 30px;
+    }
+
+    .chip-status-dot {
+        width: 10px;
+        height: 10px;
+        border-radius: 50%;
+        background: #6fbd8f;
+        display: inline-block;
+        transition: all 0.3s ease;
+        box-shadow: 0 0 6px rgba(111,189,143,0.5);
+    }
+    .iso-table tbody tr.deselected .chip-status-dot {
+        background: #ced4da;
+        box-shadow: none;
+    }
+
+    /* ===== Tmax Warning ===== */
+    .tmax-warning-box {
+        background: linear-gradient(135deg, #fff3cd, #ffeeba);
+        border: 1px solid #ffc107;
+        border-radius: 14px;
+        padding: 14px 18px;
+        margin-top: auto;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 10px;
+        animation: fadeInUp 0.5s ease-out;
+        flex-shrink: 0;
+    }
+    .tmax-warning-icon {
+        font-size: 1.4rem;
+        flex-shrink: 0;
+    }
+    .tmax-warning-text {
+        font-family: 'Josefin Sans', sans-serif;
+        font-size: 0.85rem;
+        color: #856404;
+        font-weight: 600;
+        line-height: 1.4;
+        text-align: center;
+    }
+    .tmax-warning-text strong {
+        color: #dc4a73d2;
+        font-size: 1.05rem;
+    }
+
+    .panel-left-subtitle .count-number {
+        color: #6fbd8f;
+        font-weight: 800;
+        font-size: 1rem;
+    }
+
+    /* ===== Right Panel ===== */
+    .panel-right {
+        flex: 1;
+        background: linear-gradient(135deg, rgba(255,255,255,0.7), rgba(255,255,255,0.3));
+        backdrop-filter: blur(15px);
+        -webkit-backdrop-filter: blur(15px);
+        border-radius: 20px;
+        box-shadow: 0 10px 40px 0 rgba(31,38,135,0.1);
+        border: 1px solid rgba(255,255,255,0.5);
+        padding: 25px 30px;
+    }
+
+    .panel-right-title {
+        font-family: 'Josefin Sans', sans-serif;
+        font-size: 1.3rem;
+        font-weight: 800;
+        color: #2c3e50;
+        margin-bottom: 5px;
+        text-align: center;
+    }
+
+    /* ===== Toggle Switch ===== */
+    .toggle-container {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 15px;
+        margin-bottom: 25px;
+    }
+    .toggle-label {
+        font-family: 'Josefin Sans', sans-serif;
+        font-size: 1rem;
+        font-weight: 700;
+        color: #adb5bd;
+        transition: color 0.3s ease;
+        cursor: pointer;
+    }
+    .toggle-label.active {
+        color: #2c3e50;
+    }
+    .toggle-track {
+        width: 56px;
+        height: 28px;
+        background: linear-gradient(135deg, #4497ef, #6bb3f0);
+        border-radius: 14px;
+        position: relative;
+        cursor: pointer;
+        transition: background 0.3s ease;
+        box-shadow: inset 0 2px 4px rgba(0,0,0,0.1);
+    }
+    .toggle-track.active {
+        background: linear-gradient(135deg, #72b6c5, #8ec8d4);
+    }
+    .toggle-track::after {
+        content: '';
+        position: absolute;
+        top: 3px;
+        left: 3px;
+        width: 22px;
+        height: 22px;
+        background: white;
+        border-radius: 50%;
+        transition: transform 0.3s cubic-bezier(0.68, -0.55, 0.265, 1.55);
+        box-shadow: 0 2px 6px rgba(0,0,0,0.15);
+    }
+    .toggle-track.active::after {
+        transform: translateX(28px);
+    }
+
+    /* ===== Section divider ===== */
+    .section-divider {
+        border: none;
+        border-top: 1px solid rgba(0,0,0,0.06);
+        margin: 15px 0;
+    }
+
+    /* ===== Range Slider ===== */
+    .slider-section {
+        margin-bottom: 12px;
+    }
+    .slider-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 10px;
+    }
+    .slider-label {
+        font-family: 'Josefin Sans', sans-serif;
+        font-size: 0.85rem;
+        font-weight: 700;
+        color: #6c757d;
+        letter-spacing: 0.5px;
+    }
+    .slider-label i {
+        font-style: italic;
+        color: #4497ef;
+    }
+    .slider-bounds {
+        font-family: 'Josefin Sans', sans-serif;
+        font-size: 0.75rem;
+        color: #adb5bd;
+    }
+
+    .dual-range-container {
+        position: relative;
+        height: 36px;
+        padding: 0 9px;
+    }
+    .dual-range-container input[type="range"] {
+        position: absolute;
+        left: 0;
+        right: 0;
+        top: 50%;
+        transform: translateY(-50%);
+        width: 100%;
+        height: 36px;
+        margin: 0;
+        padding: 0;
+        -webkit-appearance: none;
+        appearance: none;
+        background: transparent;
+        pointer-events: none;
+        z-index: 2;
+        outline: none;
+    }
+    .dual-range-container input[type="range"]::-webkit-slider-runnable-track {
+        height: 6px;
+        background: transparent;
+        border: none;
+    }
+    .dual-range-container input[type="range"]::-webkit-slider-thumb {
+        -webkit-appearance: none;
+        appearance: none;
+        width: 18px;
+        height: 18px;
+        border-radius: 50%;
+        background: #4497ef;
+        border: 2.5px solid white;
+        box-shadow: 0 1px 6px rgba(68,151,239,0.4);
+        cursor: pointer;
+        pointer-events: all;
+        margin-top: -6px;
+        transition: box-shadow 0.15s ease;
+    }
+    .dual-range-container input[type="range"]::-webkit-slider-thumb:hover {
+        box-shadow: 0 2px 10px rgba(68,151,239,0.7);
+    }
+    .dual-range-container input[type="range"]::-moz-range-track {
+        height: 6px;
+        background: transparent;
+        border: none;
+    }
+    .dual-range-container input[type="range"]::-moz-range-thumb {
+        width: 14px;
+        height: 14px;
+        border-radius: 50%;
+        background: #4497ef;
+        border: 2.5px solid white;
+        box-shadow: 0 1px 6px rgba(68,151,239,0.4);
+        cursor: pointer;
+        pointer-events: all;
+    }
+    .slider-track-bg {
+        position: absolute;
+        top: 50%;
+        left: 9px;
+        right: 9px;
+        height: 6px;
+        transform: translateY(-50%);
+        background: #e9ecef;
+        border-radius: 3px;
+        z-index: 0;
+    }
+    .slider-track-fill {
+        position: absolute;
+        top: 50%;
+        height: 6px;
+        transform: translateY(-50%);
+        background: linear-gradient(90deg, #4497ef, #72b6c5);
+        border-radius: 3px;
+        z-index: 1;
+        transition: left 0.05s, right 0.05s;
+    }
+
+    /* ===== Input Section ===== */
+    .input-section {
+        transition: opacity 0.3s ease, transform 0.3s ease;
+    }
+    .filter-row {
+        display: flex;
+        gap: 20px;
+        margin-bottom: 12px;
+        align-items: flex-end;
+        justify-content: center;
+    }
+    .filter-group {
+        flex: 1;
+        max-width: 260px;
+    }
+    .filter-label {
+        display: block;
+        font-family: 'Josefin Sans', sans-serif;
+        font-size: 0.85rem;
+        font-weight: 700;
+        color: #6c757d;
+        margin-bottom: 6px;
+        letter-spacing: 0.5px;
+    }
+    .filter-label i {
+        font-style: italic;
+        color: #4497ef;
+    }
+    .filter-input {
+        width: 100%;
+        padding: 10px 16px;
+        border: 2px solid #e9ecef;
+        border-radius: 12px;
+        font-family: 'Josefin Sans', sans-serif;
+        font-size: 1rem;
+        color: #adb5bd;
+        background: white;
+        transition: all 0.3s ease;
+        outline: none;
+        box-sizing: border-box;
+    }
+    .filter-input.has-input {
+        color: #2c3e50;
+    }
+    .filter-input:focus {
+        border-color: #4497ef;
+        box-shadow: 0 0 0 3px rgba(68, 151, 239, 0.15);
+        color: #2c3e50;
+    }
+    .filter-input:hover:not(:focus) {
+        border-color: #ced4da;
+    }
+    .filter-input.input-warning {
+        border-color: #ffc107;
+        box-shadow: 0 0 0 3px rgba(255, 193, 7, 0.15);
+    }
+
+    /* Single row input */
+    .filter-single {
+        max-width: 260px;
+        margin: 0 auto 18px;
+    }
+
+    /* ===== Buttons ===== */
+    .btn-filter-submit {
+        background: #4497ef;
+        color: white;
+        border: none;
+        border-radius: 15px;
+        font-family: 'Josefin Sans', sans-serif;
+        font-weight: 800;
+        font-size: 1.15rem;
+        padding: 14px 45px;
+        letter-spacing: 1px;
+        box-shadow: 0 8px 20px rgba(68, 151, 239, 0.4);
+        transition: all 0.3s ease;
+        text-transform: uppercase;
+        cursor: pointer;
+        display: inline-block;
+    }
+    .btn-filter-submit:hover {
+        transform: translateY(-4px) scale(1.05);
+        box-shadow: 0 12px 25px rgba(68, 151, 239, 0.6);
+        color: white;
+    }
+
+    .btn-secondary {
+        background: #adb5bd;
+        color: white;
+        border: none;
+        border-radius: 10px;
+        font-family: 'Josefin Sans', sans-serif;
+        font-weight: 600;
+        font-size: 0.9rem;
+        padding: 8px 20px;
+        letter-spacing: 0.5px;
+        box-shadow: 0 4px 12px rgba(173, 181, 189, 0.3);
+        transition: all 0.3s ease;
+        cursor: pointer;
+        text-decoration: none;
+    }
+    .btn-secondary:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 6px 16px rgba(173, 181, 189, 0.5);
+        color: white;
+    }
+
+    .btn-reset {
+        background: #72b6c5;
+        color: white;
+        border: none;
+        border-radius: 10px;
+        font-family: 'Josefin Sans', sans-serif;
+        font-weight: 600;
+        font-size: 0.9rem;
+        padding: 8px 20px;
+        letter-spacing: 0.5px;
+        box-shadow: 0 4px 12px rgba(114, 182, 197, 0.3);
+        transition: all 0.3s ease;
+        cursor: pointer;
+    }
+    .btn-reset:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 6px 16px rgba(114, 182, 197, 0.5);
+        color: white;
+    }
+
+    .buttons-row {
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        gap: 20px;
+        margin-top: 10px;
+    }
+
+    /* ===== T input constraint hint ===== */
+    .t-constraint-hint {
+        font-family: 'Josefin Sans', sans-serif;
+        font-size: 0.78rem;
+        color: #6c757d;
+        text-align: center;
+        margin-top: 4px;
+    }
+    .t-constraint-hint strong {
+        color: #dc4a73d2;
+    }
+
+    /* ===== Animations ===== */
+    @keyframes fadeInUp {
+        from { opacity: 0; transform: translateY(15px); }
+        to { opacity: 1; transform: translateY(0); }
+    }
+    .panel-left { animation: fadeInUp 0.5s ease-out 0.1s both; }
+    .panel-right { animation: fadeInUp 0.5s ease-out 0.25s both; }
+
+    /* ===== Responsive ===== */
+    @media (max-width: 900px) {
+        .dofilters-wrapper {
+            flex-direction: column;
+            padding: 0 15px;
+            align-items: stretch;
+        }
+        .panel-left {
+            flex: none;
+            width: 100%;
+            position: static;
+        }
+        .panel-right {
+            width: 100%;
+            padding: 25px 20px;
+            box-sizing: border-box;
+        }
+        .filter-row {
+            flex-direction: column;
+            gap: 14px;
+            align-items: center;
+        }
+        .filter-group {
+            max-width: 100%;
+            width: 100%;
+        }
+    }
+
+    /* ===== Loading Overlay ===== */
+    .loading-overlay {
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        background: rgba(255, 255, 255, 0.6);
+        backdrop-filter: blur(8px);
+        -webkit-backdrop-filter: blur(8px);
+        z-index: 9999;
+        display: none;
+        flex-direction: column;
+        justify-content: center;
+        align-items: center;
+        opacity: 0;
+        transition: opacity 0.3s ease;
+    }
+    .loading-overlay.active {
+        display: flex;
+        opacity: 1;
+    }
+    .spinner {
+        width: 60px;
+        height: 60px;
+        border: 5px solid rgba(68, 151, 239, 0.2);
+        border-top-color: #4497ef;
+        border-radius: 50%;
+        animation: spin 1s linear infinite;
+        margin-bottom: 20px;
+        box-shadow: 0 4px 15px rgba(68, 151, 239, 0.2);
+    }
+    .loading-text {
+        font-family: 'Josefin Sans', sans-serif;
+        font-size: 1.5rem;
+        font-weight: 800;
+        color: #2c3e50;
+        letter-spacing: 1px;
+        animation: pulseText 1.5s ease-in-out infinite;
+    }
+    @keyframes spin {
+        to { transform: rotate(360deg); }
+    }
+    @keyframes pulseText {
+        0%, 100% { opacity: 1; transform: scale(1); }
+        50% { opacity: 0.7; transform: scale(1.05); }
+    }
+</style>
+
+<!-- Loading Overlay HTML -->
+<div class="loading-overlay" id="loadingOverlay">
+    <div class="spinner"></div>
+    <div class="loading-text">Calculating Spectrum...</div>
+</div>
+
+<div class="container">
+    <form id="filterForm" method="GET" action="{% url 'linelist:get_data' %}">
+
+        <div class="dofilters-wrapper">
+
+            <!-- ========== LEFT PANEL: Selected Isotopologues ========== -->
+            <div class="panel-left">
+                <div class="panel-left-title">Selected Isotopologues</div>
+                <div class="panel-left-subtitle">Click row to toggle • Active: <span class="count-number" id="activeCount">{{ selected_isos|length }}</span> / {{ selected_isos|length }}</div>
+
+                <div class="iso-table-wrapper" id="isoChipGrid">
+                    <table class="iso-table">
+                        <thead>
+                            <tr>
+                                <th class="sortable-header" data-sort="formula">Isotopologue
+                                    <span class="sort-icon"><span class="up">▲</span><span class="down">▼</span></span>
+                                </th>
+                                <th class="sortable-header" data-sort="tmax"><i>T</i><sub>max</sub> / K
+                                    <span class="sort-icon"><span class="up">▲</span><span class="down">▼</span></span>
+                                </th>
+                                <th><i>ν</i> range / cm⁻¹</th>
+                                <th style="text-align: center; cursor: pointer;" onclick="toggleAllIsotopologues(this)" title="Toggle All">
+                                    <span class="chip-status-dot" id="selectAllDot"></span>
+                                </th>
+                            </tr>
+                        </thead>
+                        <tbody id="isoTableBody">
+                            {% for iso in selected_isos %}
+                            <tr data-slug="{{ iso.slug }}"
+                                data-tmax="{{ iso.tmax }}"
+                                data-vmin="{{ iso.vmin }}"
+                                data-vmax="{{ iso.vmax }}"
+                                data-orig-index="{{ forloop.counter0 }}"
+                                onclick="toggleIsoRow(this)">
+                                <td class="td-formula">{{ iso.html|safe }}</td>
+                                <td class="td-tmax">{{ iso.tmax }}</td>
+                                <td class="td-vrange">
+                                    <div class="td-vrange-container">
+                                        <div class="vrange-min-wrapper">
+                                            <span class="vrange-min">{{ iso.vmin }}</span>
+                                        </div>
+                                        <span class="vrange-dash">–</span>
+                                        <div class="vrange-max-wrapper">
+                                            <span class="vrange-max">{{ iso.vmax }}</span>
+                                        </div>
+                                    </div>
+                                </td>
+                                <td class="td-status"><span class="chip-status-dot"></span></td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+
+                <!-- Tmax Warning -->
+                <div class="tmax-warning-box" id="tmaxWarning">
+                    <span class="tmax-warning-text">
+                        <i>T</i> must not exceed <strong id="tmaxDisplay">{{ min_tmax }}</strong> K
+                    </span>
+                </div>
+
+                <!-- Hidden isotopologue slugs (managed by JS) -->
+                <div id="hiddenIsoInputs">
+                    {% for iso in selected_isos %}
+                    <input type="hidden" name="iso" value="{{ iso.slug }}" data-slug="{{ iso.slug }}">
+                    {% endfor %}
+                </div>
+            </div>
+
+            <!-- ========== RIGHT PANEL: Filter Controls ========== -->
+            <div class="panel-right">
+                <div class="panel-right-title">Filter Parameters</div>
+
+                <hr class="section-divider">
+
+                <!-- Wavenumber / Wavelength Toggle -->
+                <div class="toggle-container">
+                    <span class="toggle-label active" id="nuLabel"><i>ν</i> / cm⁻¹</span>
+                    <div class="toggle-track" id="toggleTrack" onclick="toggle_wavenumber_wavelength()"></div>
+                    <span class="toggle-label" id="wvLabel"><i>λ</i> / nm</span>
+                </div>
+
+                <!-- Wavenumber Slider + Inputs -->
+                <div id="select_by_wavenumber" class="input-section">
+                    <div class="slider-section">
+                        <div class="slider-header">
+                            <span class="slider-label"><i>ν</i> range / cm⁻¹</span>
+                            <span class="slider-bounds" id="nuBounds">{{ global_vmin }} – {{ global_vmax }}</span>
+                        </div>
+                        <div class="dual-range-container">
+                            <div class="slider-track-bg"></div>
+                            <div class="slider-track-fill" id="nuTrackFill"></div>
+                            <input type="range" id="nuSliderMin" min="{{ global_vmin }}" max="{{ global_vmax }}" value="{{ global_vmin }}" step="0.1">
+                            <input type="range" id="nuSliderMax" min="{{ global_vmin }}" max="{{ global_vmax }}" value="{{ global_vmax }}" step="0.1">
+                        </div>
+                    </div>
+                    <div class="filter-row">
+                        <div class="filter-group">
+                            <label class="filter-label" for="numin"><i>ν</i><sub>min</sub> / cm⁻¹</label>
+                            <input type="text" class="filter-input" id="numin" name="numin" value="≥ {{ global_vmin }}" placeholder="≥ {{ global_vmin }}">
+                        </div>
+                        <div class="filter-group">
+                            <label class="filter-label" for="numax"><i>ν</i><sub>max</sub> / cm⁻¹</label>
+                            <input type="text" class="filter-input" id="numax" name="numax" value="≤ {{ global_vmax }}" placeholder="≤ {{ global_vmax }}">
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Wavelength Slider + Inputs (hidden by default) -->
+                <div id="select_by_wavelength" class="input-section" hidden>
+                    <div class="slider-section">
+                        <div class="slider-header">
+                            <span class="slider-label"><i>λ</i> range / nm</span>
+                            <span class="slider-bounds" id="wvBoundsDisplay"></span>
+                        </div>
+                        <div class="dual-range-container">
+                            <div class="slider-track-bg"></div>
+                            <div class="slider-track-fill" id="wvTrackFill"></div>
+                            <input type="range" id="wvSliderMin" step="0.1">
+                            <input type="range" id="wvSliderMax" step="0.1">
+                        </div>
+                    </div>
+                    <div class="filter-row">
+                        <div class="filter-group">
+                            <label class="filter-label" for="wvmin"><i>λ</i><sub>min</sub> / nm</label>
+                            <input type="text" class="filter-input" id="wvmin" name="wvmin" value="≥ {{ global_wvmin }}" placeholder="≥ {{ global_wvmin }}">
+                        </div>
+                        <div class="filter-group">
+                            <label class="filter-label" for="wvmax"><i>λ</i><sub>max</sub> / nm</label>
+                            <input type="text" class="filter-input" id="wvmax" name="wvmax" value="≤ {{ global_wvmax }}" placeholder="≤ {{ global_wvmax }}">
+                        </div>
+                    </div>
+                </div>
+
+                <hr class="section-divider">
+
+                <!-- Temperature -->
+                <div class="filter-single">
+                    <label class="filter-label" for="T"><i>T</i> / K</label>
+                    <input type="text" class="filter-input" id="T" name="T" value="296" required placeholder="e.g. 296">
+                    <div class="t-constraint-hint">
+                        Max allowed: <strong id="tConstraintDisplay">{{ min_tmax }}</strong> K
+                    </div>
+                </div>
+
+                <!-- Smin -->
+                <div class="filter-single">
+                    <label class="filter-label" for="Smin"><i>S</i><sub>min</sub></label>
+                    <input type="text" class="filter-input" id="Smin" name="Smin" value="1e-30" placeholder="e.g. 1e-30">
+                </div>
+
+                <hr class="section-divider">
+
+                <div class="buttons-row">
+                    <a href="{% url 'linelist:get_linelist' %}?{% for iso in selected_isos %}{% ifchanged iso.molecule.slug %}molecule={{ iso.molecule.slug }}&{% endifchanged %}{% endfor %}" class="btn-secondary" style="text-decoration:none; display:flex; align-items:center;">← Back</a>
+                    <button type="submit" class="btn-filter-submit" id="submitBtn">Submit</button>
+                    <button type="button" onclick="resetForm()" class="btn-reset">Reset ↻</button>
+                </div>
+            </div>
+        </div>
+    </form>
+</div>
+
+<script>
+document.addEventListener("DOMContentLoaded", function() {
+
+    // ===== Global State =====
+    var globalVmin = {{ global_vmin }};
+    var globalVmax = {{ global_vmax }};
+    var minTmax = {{ min_tmax }};
+
+    // Sorting is inherited from the Django queryset order (same as isotopologues page)
+
+    // ===== Slider Setup =====
+    var nuSliderMin = document.getElementById('nuSliderMin');
+    var nuSliderMax = document.getElementById('nuSliderMax');
+    var nuTrackFill = document.getElementById('nuTrackFill');
+    var numinInput = document.getElementById('numin');
+    var numaxInput = document.getElementById('numax');
+
+    function updateNuTrackFill() {
+        var min = parseFloat(nuSliderMin.value);
+        var max = parseFloat(nuSliderMax.value);
+        var range = parseFloat(nuSliderMin.max) - parseFloat(nuSliderMin.min);
+        if (range <= 0) return;
+        var leftFrac = (min - parseFloat(nuSliderMin.min)) / range;
+        var rightFrac = (parseFloat(nuSliderMax.max) - max) / range;
+        var containerW = nuTrackFill.parentElement.offsetWidth;
+        var pad = 9;
+        var trackW = containerW - 2 * pad;
+        nuTrackFill.style.left = (pad + leftFrac * trackW) + 'px';
+        nuTrackFill.style.right = (pad + rightFrac * trackW) + 'px';
+    }
+
+    nuSliderMin.addEventListener('input', function() {
+        if (parseFloat(nuSliderMin.value) > parseFloat(nuSliderMax.value)) {
+            nuSliderMin.value = nuSliderMax.value;
+        }
+        numinInput.value = parseFloat(nuSliderMin.value).toFixed(2);
+        numinInput.classList.add('has-input');
+        updateNuTrackFill();
+    });
+    nuSliderMax.addEventListener('input', function() {
+        if (parseFloat(nuSliderMax.value) < parseFloat(nuSliderMin.value)) {
+            nuSliderMax.value = nuSliderMin.value;
+        }
+        numaxInput.value = parseFloat(nuSliderMax.value).toFixed(2);
+        numaxInput.classList.add('has-input');
+        updateNuTrackFill();
+    });
+
+    numinInput.addEventListener('change', function() {
+        var val = parseFloat(this.value.replace(/[≥≤]/g, ''));
+        if (!isNaN(val)) {
+            val = Math.max(parseFloat(nuSliderMin.min), Math.min(val, parseFloat(nuSliderMax.value)));
+            nuSliderMin.value = val;
+            this.value = val;
+            updateNuTrackFill();
+        }
+    });
+    numaxInput.addEventListener('change', function() {
+        var val = parseFloat(this.value.replace(/[≥≤]/g, ''));
+        if (!isNaN(val)) {
+            val = Math.min(parseFloat(nuSliderMax.max), Math.max(val, parseFloat(nuSliderMin.value)));
+            nuSliderMax.value = val;
+            this.value = val;
+            updateNuTrackFill();
+        }
+    });
+
+    // Initialize track fill
+    updateNuTrackFill();
+
+    // ===== Wavelength Slider (computed from wavenumber bounds) =====
+    var wvSliderMin = document.getElementById('wvSliderMin');
+    var wvSliderMax = document.getElementById('wvSliderMax');
+    var wvTrackFill = document.getElementById('wvTrackFill');
+    var wvminInput = document.getElementById('wvmin');
+    var wvmaxInput = document.getElementById('wvmax');
+    var wvBoundsDisplay = document.getElementById('wvBoundsDisplay');
+
+    // Wavelength bounds are inverse of wavenumber bounds
+    var wvLower = globalVmax > 0 ? (1e7 / globalVmax) : 0;
+    var wvUpper = globalVmin > 0 ? (1e7 / globalVmin) : 100000;
+
+    wvSliderMin.min = wvLower.toFixed(2);
+    wvSliderMin.max = wvUpper.toFixed(2);
+    wvSliderMin.value = wvLower.toFixed(2);
+    wvSliderMax.min = wvLower.toFixed(2);
+    wvSliderMax.max = wvUpper.toFixed(2);
+    wvSliderMax.value = wvUpper.toFixed(2);
+    wvBoundsDisplay.textContent = wvLower.toFixed(2) + ' – ' + wvUpper.toFixed(2);
+
+    function updateWvTrackFill() {
+        var min = parseFloat(wvSliderMin.value);
+        var max = parseFloat(wvSliderMax.value);
+        var range = parseFloat(wvSliderMin.max) - parseFloat(wvSliderMin.min);
+        if (range <= 0) return;
+        var leftFrac = (min - parseFloat(wvSliderMin.min)) / range;
+        var rightFrac = (parseFloat(wvSliderMax.max) - max) / range;
+        var containerW = wvTrackFill.parentElement.offsetWidth;
+        var pad = 9;
+        var trackW = containerW - 2 * pad;
+        wvTrackFill.style.left = (pad + leftFrac * trackW) + 'px';
+        wvTrackFill.style.right = (pad + rightFrac * trackW) + 'px';
+    }
+
+    wvSliderMin.addEventListener('input', function() {
+        if (parseFloat(wvSliderMin.value) > parseFloat(wvSliderMax.value)) {
+            wvSliderMin.value = wvSliderMax.value;
+        }
+        wvminInput.value = parseFloat(wvSliderMin.value).toFixed(2);
+        wvminInput.classList.add('has-input');
+        updateWvTrackFill();
+    });
+    wvSliderMax.addEventListener('input', function() {
+        if (parseFloat(wvSliderMax.value) < parseFloat(wvSliderMin.value)) {
+            wvSliderMax.value = wvSliderMin.value;
+        }
+        wvmaxInput.value = parseFloat(wvSliderMax.value).toFixed(2);
+        wvmaxInput.classList.add('has-input');
+        updateWvTrackFill();
+    });
+
+    wvminInput.addEventListener('change', function() {
+        var val = parseFloat(this.value.replace(/[≥≤]/g, ''));
+        if (!isNaN(val)) {
+            val = Math.max(parseFloat(wvSliderMin.min), Math.min(val, parseFloat(wvSliderMax.value)));
+            wvSliderMin.value = val;
+            this.value = val;
+            updateWvTrackFill();
+        }
+    });
+    wvmaxInput.addEventListener('change', function() {
+        var val = parseFloat(this.value.replace(/[≥≤]/g, ''));
+        if (!isNaN(val)) {
+            val = Math.min(parseFloat(wvSliderMax.max), Math.max(val, parseFloat(wvSliderMin.value)));
+            wvSliderMax.value = val;
+            this.value = val;
+            updateWvTrackFill();
+        }
+    });
+
+    updateWvTrackFill();
+
+    // ===== Expose updateSlidersFromInputs globally =====
+    window.updateSlidersFromInputs = function() {
+        // After toggle, sync sliders with current input values
+        var nuMinVal = parseFloat(numinInput.value);
+        var nuMaxVal = parseFloat(numaxInput.value);
+        if (!isNaN(nuMinVal)) nuSliderMin.value = nuMinVal;
+        if (!isNaN(nuMaxVal)) nuSliderMax.value = nuMaxVal;
+        updateNuTrackFill();
+
+        var wvMinVal = parseFloat(wvminInput.value);
+        var wvMaxVal = parseFloat(wvmaxInput.value);
+        if (!isNaN(wvMinVal)) wvSliderMin.value = wvMinVal;
+        if (!isNaN(wvMaxVal)) wvSliderMax.value = wvMaxVal;
+        updateWvTrackFill();
+    };
+
+    // ===== Temperature Validation =====
+    var tInput = document.getElementById('T');
+    tInput.addEventListener('input', function() {
+        var val = parseFloat(this.value);
+        if (!isNaN(val) && val > minTmax) {
+            this.classList.add('input-warning');
+        } else {
+            this.classList.remove('input-warning');
+        }
+    });
+
+    // ===== Form Submission Validation =====
+    document.getElementById('filterForm').addEventListener('submit', function(e) {
+        // Strip out >= and <= characters from inputs before submitting
+        ['numin', 'numax', 'wvmin', 'wvmax'].forEach(function(id) {
+            var el = document.getElementById(id);
+            if (el && el.value) {
+                el.value = el.value.replace(/[≥≤\s]/g, '');
+            }
+        });
+
+        var activeChips = document.querySelectorAll('.iso-table tbody tr:not(.deselected)');
+        if (activeChips.length === 0) {
+            e.preventDefault();
+            alert('Please select at least one isotopologue.');
+            return;
+        }
+        var tVal = parseFloat(tInput.value);
+        if (!isNaN(tVal) && tVal > minTmax) {
+            e.preventDefault();
+            alert('Temperature T (' + tVal + ' K) exceeds the minimum Tmax (' + minTmax + ' K) of your selected isotopologues. Please lower T or deselect the limiting isotopologue.');
+            return;
+        }
+
+        // Show loading overlay
+        document.getElementById('loadingOverlay').classList.add('active');
+    });
+
+    // ===== Input Color Management =====
+    // Toggle has-input class based on whether input has non-empty value
+    var allFilterInputs = document.querySelectorAll('.filter-input');
+    allFilterInputs.forEach(function(inp) {
+        // No initial state check: all inputs start perfectly grey until interaction
+        inp.addEventListener('input', function() {
+            if (this.value.trim() !== '') {
+                this.classList.add('has-input');
+            } else {
+                this.classList.remove('has-input');
+            }
+        });
+    });
+
+});
+
+// ===== Reset Form =====
+function resetForm() {
+    var globalVmin = {{ global_vmin }};
+    var globalVmax = {{ global_vmax }};
+    var origMinTmax = {{ min_tmax }};
+
+    // Reset wavenumber inputs
+    document.getElementById('numin').value = globalVmin;
+    document.getElementById('numax').value = globalVmax;
+    document.getElementById('nuSliderMin').value = globalVmin;
+    document.getElementById('nuSliderMax').value = globalVmax;
+
+    // Reset wavelength inputs
+    var wvLower = globalVmax > 0 ? (1e7 / globalVmax) : 0;
+    var wvUpper = globalVmin > 0 ? (1e7 / globalVmin) : 100000;
+    document.getElementById('wvmin').value = '0';
+    document.getElementById('wvmax').value = '';
+    document.getElementById('wvSliderMin').value = wvLower.toFixed(2);
+    document.getElementById('wvSliderMax').value = wvUpper.toFixed(2);
+
+    // Reset T and Smin
+    document.getElementById('T').value = '296';
+    document.getElementById('Smin').value = '1e-30';
+
+    // Re-activate all rows
+    var isoRows = document.querySelectorAll('.iso-table tbody tr');
+    var hiddenContainer = document.getElementById('hiddenIsoInputs');
+    isoRows.forEach(function(row) {
+        if (row.classList.contains('deselected')) {
+            row.classList.remove('deselected');
+            var slug = row.getAttribute('data-slug');
+            var input = document.createElement('input');
+            input.type = 'hidden';
+            input.name = 'iso';
+            input.value = slug;
+            input.setAttribute('data-slug', slug);
+            hiddenContainer.appendChild(input);
+        }
+    });
+
+    // Reset Tmax display
+    minTmax = origMinTmax;
+    document.getElementById('tmaxDisplay').textContent = origMinTmax;
+    document.getElementById('tConstraintDisplay').textContent = origMinTmax;
+    document.getElementById('activeCount').textContent = isoRows.length;
+    document.getElementById('tmaxWarning').style.display = 'flex';
+
+    var headerDot = document.getElementById('selectAllDot');
+    if (headerDot) {
+        headerDot.style.background = '';
+        headerDot.style.boxShadow = '';
+    }
+
+    // Remove warnings
+    document.getElementById('T').classList.remove('input-warning');
+
+    // Update slider track fills
+    if (typeof updateSlidersFromInputs === 'function') {
+        updateSlidersFromInputs();
+    }
+
+    // Update has-input classes
+    document.querySelectorAll('.filter-input').forEach(function(inp) {
+        if (inp.value.trim() !== '') {
+            inp.classList.add('has-input');
+        } else {
+            inp.classList.remove('has-input');
+        }
+    });
+
+    // Reset toggle to wavenumber if currently on wavelength
+    if (select_by_wavelength) {
+        toggle_wavenumber_wavelength();
+    }
+}
+
+// ===== Toggle Isotopologue Row =====
+function toggleIsoRow(rowEl) {
+    var slug = rowEl.getAttribute('data-slug');
+    var isDeselected = rowEl.classList.toggle('deselected');
+
+    // Manage hidden input
+    var hiddenContainer = document.getElementById('hiddenIsoInputs');
+    if (isDeselected) {
+        // Remove hidden input
+        var input = hiddenContainer.querySelector('input[data-slug="' + slug + '"]');
+        if (input) input.remove();
+    } else {
+        // Re-add hidden input
+        var input = document.createElement('input');
+        input.type = 'hidden';
+        input.name = 'iso';
+        input.value = slug;
+        input.setAttribute('data-slug', slug);
+        hiddenContainer.appendChild(input);
+    }
+
+    // Update Active Count
+    var allRows = document.querySelectorAll('.iso-table tbody tr');
+    var activeRows = document.querySelectorAll('.iso-table tbody tr:not(.deselected)');
+    document.getElementById('activeCount').textContent = activeRows.length;
+
+    // Recalculate min Tmax from active rows
+    var activeTmaxValues = [];
+    activeRows.forEach(function(r) {
+        var t = parseFloat(r.getAttribute('data-tmax'));
+        if (!isNaN(t)) activeTmaxValues.push(t);
+    });
+
+    var tmaxDisplay = document.getElementById('tmaxDisplay');
+    var tConstraintDisplay = document.getElementById('tConstraintDisplay');
+    var warningBox = document.getElementById('tmaxWarning');
+
+    if (activeTmaxValues.length > 0) {
+        var newMinTmax = Math.min.apply(null, activeTmaxValues);
+        // Update the global variable for form validation
+        minTmax = newMinTmax;
+        tmaxDisplay.textContent = newMinTmax;
+        tConstraintDisplay.textContent = newMinTmax;
+        warningBox.style.display = 'flex';
+    } else {
+        tmaxDisplay.textContent = 'N/A';
+        tConstraintDisplay.textContent = 'N/A';
+        warningBox.style.display = 'none';
+    }
+
+    var headerDot = document.getElementById('selectAllDot');
+    if (headerDot) {
+        if (activeRows.length === 0) {
+            headerDot.style.background = '#ced4da';
+            headerDot.style.boxShadow = 'none';
+        } else {
+            headerDot.style.background = '';
+            headerDot.style.boxShadow = '';
+        }
+    }
+
+    // Re-validate temperature
+    var tInput = document.getElementById('T');
+    var tVal = parseFloat(tInput.value);
+    if (!isNaN(tVal) && tVal > minTmax) {
+        tInput.classList.add('input-warning');
+    } else {
+        tInput.classList.remove('input-warning');
+    }
+}
+
+
+
+function toggleAllIsotopologues() {
+    var allRows = document.querySelectorAll('.iso-table tbody tr');
+    var activeRows = document.querySelectorAll('.iso-table tbody tr:not(.deselected)');
+    var headerDot = document.getElementById('selectAllDot');
+    
+    var shouldDeselectAll = activeRows.length > 0;
+    
+    allRows.forEach(function(row) {
+        if (shouldDeselectAll && !row.classList.contains('deselected')) {
+            toggleIsoRow(row);
+        } else if (!shouldDeselectAll && row.classList.contains('deselected')) {
+            toggleIsoRow(row);
+        }
+    });
+
+    if (headerDot) {
+        if (shouldDeselectAll) {
+            headerDot.style.background = '#ced4da';
+            headerDot.style.boxShadow = 'none';
+        } else {
+            headerDot.style.background = '';
+            headerDot.style.boxShadow = '';
+        }
+    }
+}
+
+// Declare minTmax globally for toggleIsoRow to update
+var minTmax = {{ min_tmax }};
+
+// ===== Table Sorting Logic =====
+document.addEventListener("DOMContentLoaded", function() {
+    const tableBody = document.getElementById('isoTableBody');
+    const headers = document.querySelectorAll('.sortable-header');
+    
+    // Store original order on load just in case
+    const rows = Array.from(tableBody.querySelectorAll('tr'));
+    
+    headers.forEach(header => {
+        header.addEventListener('click', () => {
+            const sortType = header.getAttribute('data-sort');
+            const isAsc = header.classList.contains('asc');
+            
+            // Reset all headers
+            headers.forEach(h => {
+                h.classList.remove('asc', 'desc');
+            });
+            
+            // Set new direction
+            const direction = isAsc ? -1 : 1; 
+            if (isAsc) {
+                header.classList.add('desc');
+            } else {
+                header.classList.add('asc');
+            }
+            
+            // Sort rows
+            const sortedRows = rows.sort((a, b) => {
+                let valA, valB;
+                
+                if (sortType === 'formula') {
+                    // Sorting by original order ensures the alphabetical order from views.py is restored
+                    valA = parseInt(a.getAttribute('data-orig-index'));
+                    valB = parseInt(b.getAttribute('data-orig-index'));
+                } else if (sortType === 'tmax') {
+                    valA = a.getAttribute('data-tmax') === 'N/A' ? -1 : parseFloat(a.getAttribute('data-tmax'));
+                    valB = b.getAttribute('data-tmax') === 'N/A' ? -1 : parseFloat(b.getAttribute('data-tmax'));
+                }
+                
+                if (valA < valB) return -1 * direction;
+                if (valA > valB) return 1 * direction;
+                return 0;
+            });
+            
+            // Re-append sorted rows
+            tableBody.innerHTML = '';
+            sortedRows.forEach(row => tableBody.appendChild(row));
+        });
+    });
+});
+
+// Hide loading overlay when restoring from bfcache (e.g. going back from viewspec page)
+window.addEventListener('pageshow', function() {
+    var overlay = document.getElementById('loadingOverlay');
+    if (overlay) {
+        overlay.classList.remove('active');
+    }
+});
+</script>
+
+{% endblock content %}

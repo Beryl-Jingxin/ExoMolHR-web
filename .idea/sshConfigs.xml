@@ -1,8 +1,0 @@
-<?xml version="1.0" encoding="UTF-8"?>
-<project version="4">
-  <component name="SshConfigs">
-    <configs>
-      <sshConfig authType="PASSWORD" host="exoweb.projects.phys.ucl.ac.uk" id="bed3bbe1-6b69-485c-b0e2-d89c0716201f" port="22" nameFormat="DESCRIPTIVE" username="jingxin" useOpenSSHConfig="true" />
-    </configs>
-  </component>
-</project>
