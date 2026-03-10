@@ -1,0 +1,41 @@
+Label,Fortran Format,C Format,Description
+$J$,I7/F7.1,%7d/%7.1f,Total angular momentum
+,I7,%7d,"AlCl, AlH, C$_2$, C$_2$H$_2$, C$_3$, CH$_4$, CH$^+$, CO$_2$, H$_2$CO, H$_2$CS, H$_2$O, H$_2$S, H$_3$O$^+$, H$_3$$^+$, LiOH, N$_2$, N$_2$O, NH, NH$_3$, OCS, PN, SO, SO$_2$, ScO, SiO, TiO, VO"
+,F7.1,%7.1f,"AlO, BeH, CN, CaH, CaOH, MgH, NO, NiH, OH, SiN, YO, ZrO"
++/-,A1,%1s,Total parity
+e/f,A1,%1s,Rotationless parity
+Jpar,A1,%1s,Parity excluding hyperfine effects: e or f
+g/u,A1,%1s,Gerade/ungerade
+"$\tau_i$, inv",I1,%1d,Inversion parity (0 or 1)
+ElecState,A12,%12s,Electronic term value
+$v$,I3,%3d,Vibrational quantum number
+$|\Lambda|$,I3,%3d,Absolute value of the projection of electronic angular momentum
+$|\Sigma|$,I3,%3d,Absolute value of the projection of the electronic spin
+$|\Omega|$,I5/F5.1,%5d/%5.1f,Absolute value of the projection of the total angular momentum
+,I5,%5d,"AlCl, AlH, C$_2$, CH$^+$, TiO, ZrO"
+,F5.1,%5.1f,"AlO, BeH, CN, CaH, CaOH, MgH, NO, NiH, OH, PN, SO, SiN, SiO, VO, YO"
+G$_{\rm{tot}}$,A3,%3s,Total symmetry
+G$_{\rm{rot}}$,A3,%3s,Symmetry of rotational contribution
+G$_{\rm{rve}}$,A3,%3s,Rovibrational symmetry label for upper and lower state
+G$_{\rm{vib}}$,A3,%3s,Symmetry of vibrational contribution
+N,I5,%5d,Vibrational state ID or rotational angular momentum
+L,I3,%3d,Vibronic angular momentum quantum number
+P,I2,%2d,Polyad number
+F,I2,%2d,Fine structure counting number
+F1$/$F2$/$F3,I2,%2d,Spin components F1 and F3
+Fi,I2,%2d,Spin component
+U,A1,%1s,U-notation of H$_3^+$
+G,I2,%2d,Absolute value of $k-l_2$
+K,I2,%2d,State projection of the H$_3^+$ rotational quantum number
+$K_a$,I2,%2d,$K_a$ rotational quantum number
+$K_b$,I2,%2d,$K_b$ rotational quantum number
+$K_c$,I2,%2d,$K_c$ rotational quantum number
+"$M_3$, $M_4$",I2,%2d,Multiplicity index quantum numbers
+"$v_1$,$v_2$,$v_3$,$v_4$,$v_5$,$v_6$",I2,%2d,$v_i$ Local mode vibrational quantum numbers
+"$l_2$,$l_3$,$l_4$,$L_2$,$L_3$,$L_4$",I2,%2d,Normal mode vibrational angular momentum quantum number
+"$n_1$,$n_2$,$n_3$,$n_4$",I2,%2d,Normal mode vibrational quantum numbers
+"$m_1$,$m_2$,$m_3$,$m_4$,$m_5$",I2,%2d,HITRAN normal mode quantum number 
+$n$,I2,%2d,Polyad or rotational counting number
+$n_2lin$,I2,%2d,Normal mode linear molecule bending quantum number
+Isomer,A1,%1s,Nuclear spin isomer
+Coef,F5.2,%5.2f,Coefficient with the largest contribution to the ($J=0$) contracted set

@@ -1,0 +1,720 @@
+{% extends 'theme/base.html' %}
+
+{% block extra_js %}
+<script>
+  window.MathJax = {
+    tex: {
+      inlineMath: [['$', '$'], ['\\(', '\\)']]
+    }
+  };
+</script>
+<script async src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
+
+<script>
+  document.addEventListener('DOMContentLoaded', function () {
+    function typesetMath() {
+      if (typeof window.MathJax?.typesetPromise === 'function') {
+        return window.MathJax.typesetPromise();
+      }
+      return Promise.resolve();
+    }
+
+    const isoTable = new DataTable('#isoTable', {
+      paging: false,
+      info: false,
+      ordering: false,
+      searching: true,
+      scrollY: '650px',
+      scrollCollapse: true,
+      autoWidth: false,
+      layout: {
+        topStart: null,
+        topEnd: null,
+        bottomStart: null,
+        bottomEnd: null
+      },
+      initComplete: function () {
+        this.api().columns.adjust();
+        fixDtHeadWidth();
+      },
+      drawCallback: function () {
+        typesetMath();
+        fixDtHeadWidth();
+      }
+    });
+
+    const descTable = new DataTable('#descTable', {
+      paging: false,
+      info: false,
+      ordering: false,
+      searching: true,
+      scrollY: '650px',
+      scrollCollapse: true,
+      autoWidth: false,
+      layout: {
+        topStart: null,
+        topEnd: null,
+        bottomStart: null,
+        bottomEnd: null
+      },
+      initComplete: function () {
+        this.api().columns.adjust();
+        fixDtHeadWidth();
+      },
+      drawCallback: function () {
+        typesetMath();
+        fixDtHeadWidth();
+      }
+    });
+
+    function bindSearch(input, table) {
+      if (!input) {
+        return;
+      }
+
+      const runSearch = function () {
+        table.search(input.value || '').draw();
+      };
+
+      input.addEventListener('input', runSearch);
+      input.addEventListener('search', runSearch);
+    }
+
+    bindSearch(document.getElementById('isoSearchInput'), isoTable);
+    bindSearch(document.getElementById('descSearchInput'), descTable);
+
+    function fixDtHeadWidth() {
+      document.querySelectorAll('#isoTable_wrapper .dt-scroll-headInner, #descTable_wrapper .dt-scroll-headInner')
+        .forEach(function (el) {
+          el.style.width = '100%';
+          el.style.margin = '0';
+          el.style.padding = '0';
+          el.style.border = 'none';
+          el.style.boxSizing = 'border-box';
+        });
+
+      document.querySelectorAll('#isoTable_wrapper .dt-scroll-headInner table, #descTable_wrapper .dt-scroll-headInner table')
+        .forEach(function (el) {
+          el.style.width = '100%';
+          el.style.margin = '0';
+          el.style.borderCollapse = 'separate';
+          el.style.borderSpacing = '0';
+        });
+    }
+
+    function adjustTables() {
+      isoTable.columns.adjust();
+      descTable.columns.adjust();
+      fixDtHeadWidth();
+    }
+
+    window.addEventListener('resize', adjustTables);
+    setTimeout(adjustTables, 50);
+    setTimeout(adjustTables, 200);
+
+    typesetMath().then(function () {
+      adjustTables();
+    });
+  });
+</script>
+{% endblock %}
+
+{% block content %}
+<div class="card-body qn-hero">
+  <h3 class="card-title">Quantum Number Labels & Formats</h3>
+  <span class="ref-pill">Quantum Number</span>
+  <p class="card-text">You can find all quantum number labels and formats in the tables below</p>
+</div>
+
+<style>
+  .qn-hero {
+    text-align: center;
+    max-width: 1100px;
+    margin: 0 auto;
+    padding: 6px 16px 12px;
+  }
+
+  .qn-hero .card-title {
+    font-weight: 800;
+    color: #2f3a4c;
+    margin-bottom: 8px;
+    letter-spacing: 0.3px;
+  }
+
+  .qn-hero .card-text {
+    margin-top: 9px;
+    font-size: 1.03rem;
+    color: #5a6777;
+  }
+
+  .ref-pill {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    background: linear-gradient(135deg, #4497ef, #72b6c5);
+    color: #fff;
+    font-size: 0.78rem;
+    font-weight: 700;
+    padding: 5px 12px;
+    border-radius: 999px;
+    letter-spacing: 0.9px;
+    text-transform: uppercase;
+    box-shadow: 0 8px 18px rgba(68, 151, 239, 0.28);
+    margin: 0 auto;
+  }
+
+  .qn-shell {
+    max-width: 1100px;
+    margin: 4px auto 30px;
+    padding: 0 12px;
+  }
+
+  .qn-card {
+    background: #ffffff;
+    border-radius: 20px;
+    padding: 24px;
+    margin-bottom: 24px;
+    box-shadow: 0 12px 32px rgba(31, 38, 135, 0.10);
+  }
+
+  .qn-card-title {
+    font-family: 'Josefin Sans', sans-serif;
+    font-size: 1.35rem;
+    font-weight: 800;
+    color: #2d3c50;
+    margin: 0 0 6px;
+    text-align: center;
+  }
+
+  .qn-card-subtitle {
+    margin: 0 0 16px;
+    color: #607086;
+    font-size: 0.98rem;
+    text-align: center;
+  }
+
+  .table-tools {
+    display: flex;
+    justify-content: center;
+    margin: 8px 0 14px;
+  }
+
+  .search-box {
+    width: min(400px, 100%);
+    border: 1px solid rgba(83, 128, 59, 0.35);
+    border-radius: 12px;
+    padding: 10px 14px;
+    font-size: 0.95rem;
+    color: #2f3a4c;
+    outline: none;
+    background: #fff;
+  }
+
+  .search-box:focus {
+    border-color: #5a9440;
+    box-shadow: 0 0 0 3px rgba(90, 148, 64, 0.15);
+  }
+
+  .table-surface {
+    border: none !important;
+    border-radius: 16px;
+    overflow: hidden;
+    background: #fff;
+    box-shadow: none !important;
+  }
+
+  #isoTable,
+  #descTable {
+    width: 100% !important;
+    table-layout: fixed !important;
+    border-collapse: collapse!important;
+    border-spacing: 0 !important;
+    margin: 0 !important;
+    border: none !important;
+    font-family: 'Josefin Sans', sans-serif;
+  }
+
+  #isoTable thead th,
+  #descTable thead th {
+    text-align: center !important;
+    vertical-align: middle !important;
+    font-weight: 700;
+    font-size: 0.98rem;
+    padding: 14px 10px;
+    white-space: nowrap;
+    color: #fff;
+    background: linear-gradient(135deg, #72b6c5, #4497ef) !important;
+    border: none !important;
+  }
+
+  #isoTable tbody td,
+  #descTable tbody td {
+    padding: 10px 10px;
+    text-align: center;
+    vertical-align: middle;
+    border: none !important;
+    background: #fff;
+  }
+
+  #isoTable_wrapper,
+  #descTable_wrapper {
+    margin: 0 !important;
+    padding: 0 !important;
+  }
+
+  #isoTable_wrapper .dt-layout-row,
+  #descTable_wrapper .dt-layout-row {
+    margin: 0 !important;
+  }
+
+  /* Individual styling for each table wrapper to ensure specificity */
+  #isoTable_wrapper .dt-scroll,
+  #descTable_wrapper .dt-scroll {
+    border: 1px solid #4497ef !important;
+    border-radius: 16px !important;
+    overflow: hidden !important;
+    background: transparent !important;
+  }
+
+  #isoTable_wrapper .dt-scroll-head,
+  #descTable_wrapper .dt-scroll-head {
+    position: relative !important;
+    z-index: 3 !important;
+    border-bottom: 1px solid #4497ef !important;
+    box-shadow: 0 1px 0 #fff !important;
+    background: linear-gradient(135deg, #72b6c5, #4497ef) !important;
+  }
+
+  #isoTable_wrapper .dt-scroll-headInner,
+  #descTable_wrapper .dt-scroll-headInner {
+    margin: 0 !important;
+    padding: 0 !important;
+    border: none !important;
+    width: 100% !important;
+    box-sizing: border-box !important;
+    background: transparent !important;
+  }
+
+  #isoTable_wrapper .dt-scroll-head table,
+  #descTable_wrapper .dt-scroll-head table {
+    width: 100% !important;
+    table-layout: fixed !important;
+    border-collapse: collapse!important;
+    border-spacing: 0 !important;
+    margin: 0 !important;
+    border: none !important;
+    background: transparent !important;
+  }
+
+  #isoTable_wrapper .dt-scroll-head thead,
+  #descTable_wrapper .dt-scroll-head thead,
+  #isoTable_wrapper .dt-scroll-head tr,
+  #descTable_wrapper .dt-scroll-head tr {
+    margin: 0 !important;
+    padding: 0 !important;
+    border: none !important;
+  }
+
+  #isoTable_wrapper .dt-scroll-head thead th,
+  #descTable_wrapper .dt-scroll-head thead th {
+    margin: 0 !important;
+    border: none !important;
+    outline: none !important;
+    box-shadow: none !important;
+    background: linear-gradient(135deg, #72b6c5, #4497ef) !important;
+    color: #fff !important;
+    text-align: center !important;
+    vertical-align: middle !important;
+    font-weight: 700 !important;
+    font-size: 0.98rem !important;
+    padding: 14px 10px !important;
+    white-space: nowrap !important;
+    line-height: 1.2 !important;
+  }
+
+  #isoTable_wrapper .dt-scroll-head thead th:first-child,
+  #descTable_wrapper .dt-scroll-head thead th:first-child {
+    border-top-left-radius: 16px !important;
+  }
+ 
+  #isoTable_wrapper .dt-scroll-head thead th:last-child,
+  #descTable_wrapper .dt-scroll-head thead th:last-child {
+    border-top-right-radius: 16px !important;
+  }
+
+  #isoTable_wrapper .dt-scroll-body,
+  #descTable_wrapper .dt-scroll-body {
+    position: relative !important;
+    z-index: 1 !important;
+    background: #fff !important;
+    border: none !important;
+    overflow: auto !important;
+    scrollbar-gutter: stable !important;
+  }
+
+  #descTable_wrapper .dt-scroll-body {
+    min-height: 380px !important;
+    overflow-y: scroll !important;
+  }
+
+  #isoTable_wrapper .dt-scroll-body table,
+  #descTable_wrapper .dt-scroll-body table {
+    margin: 0 !important;
+    border-collapse: collapse!important;
+    border-spacing: 0 !important;
+    box-shadow: none !important;
+  }
+
+  #isoTable_wrapper .dt-scroll-body thead,
+  #descTable_wrapper .dt-scroll-body thead,
+  #isoTable_wrapper .dt-scroll-body tbody,
+  #descTable_wrapper .dt-scroll-body tbody,
+  #isoTable_wrapper .dt-scroll-body tr,
+  #descTable_wrapper .dt-scroll-body tr {
+    border: none !important;
+  }
+
+  #isoTable_wrapper .dt-scroll-body tbody td,
+  #descTable_wrapper .dt-scroll-body tbody td {
+    padding: 10px 10px !important;
+    text-align: center !important;
+    vertical-align: middle !important;
+    background: #fff !important;
+    border-top: none !important;
+    border-left: none !important;
+    border-right: none !important;
+    border-bottom: none !important;
+    box-shadow: none !important;
+  }
+
+  #isoTable_wrapper .dt-scroll-body tbody tr:last-child td,
+  #descTable_wrapper .dt-scroll-body tbody tr:last-child td {
+    border-bottom: none !important;
+  }
+
+  #isoTable.dataTable,
+  #descTable.dataTable,
+  #isoTable.dataTable > thead > tr > th,
+  #descTable.dataTable > thead > tr > th,
+  #isoTable.dataTable > tbody > tr > td,
+  #descTable.dataTable > tbody > tr > td {
+    border: none !important;
+  }
+
+  table.dataTable.no-footer {
+    border-bottom: none !important;
+  }
+
+  #isoTable tbody tr:hover td,
+  #isoTable_wrapper .dt-scroll-body tbody tr:hover td {
+    background: rgba(197, 234, 204, 0.32) !important;
+  }
+
+  #descTable tbody tr:hover td,
+  #descTable_wrapper .dt-scroll-body tbody tr:hover td {
+    background: rgba(58, 126, 191, 0.08) !important;
+  }
+
+  #isoTable th:nth-child(1),
+  #isoTable td:nth-child(1),
+  #isoTable_wrapper .dt-scroll-head th:nth-child(1),
+  #isoTable_wrapper .dt-scroll-body td:nth-child(1) {
+    width: 12% !important;
+    text-align: center !important;
+  }
+
+  #isoTable th:nth-child(2),
+  #isoTable td:nth-child(2),
+  #isoTable_wrapper .dt-scroll-head th:nth-child(2),
+  #isoTable_wrapper .dt-scroll-body td:nth-child(2) {
+    width: 18% !important;
+    text-align: center !important;
+  }
+
+  #isoTable th:nth-child(3),
+  #isoTable td:nth-child(3),
+  #isoTable_wrapper .dt-scroll-head th:nth-child(3),
+  #isoTable_wrapper .dt-scroll-body td:nth-child(3) {
+    width: 12% !important;
+    text-align: center !important;
+  }
+
+  #isoTable th:nth-child(4),
+  #isoTable td:nth-child(4),
+  #isoTable_wrapper .dt-scroll-head th:nth-child(4),
+  #isoTable_wrapper .dt-scroll-body td:nth-child(4) {
+    width: 58% !important;
+    text-align: center !important;
+  }
+
+  #descTable th:nth-child(1),
+  #descTable td:nth-child(1),
+  #descTable_wrapper .dt-scroll-head th:nth-child(1),
+  #descTable_wrapper .dt-scroll-body td:nth-child(1) {
+    width: 14% !important;
+    text-align: center !important;
+  }
+
+  #descTable th:nth-child(2),
+  #descTable td:nth-child(2),
+  #descTable_wrapper .dt-scroll-head th:nth-child(2),
+  #descTable_wrapper .dt-scroll-body td:nth-child(2) {
+    width: 14% !important;
+    text-align: center !important;
+  }
+
+  #descTable th:nth-child(3),
+  #descTable td:nth-child(3),
+  #descTable_wrapper .dt-scroll-head th:nth-child(3),
+  #descTable_wrapper .dt-scroll-body td:nth-child(3) {
+    width: 14% !important;
+    text-align: center !important;
+  }
+
+  #descTable th:nth-child(4),
+  #descTable td:nth-child(4),
+  #descTable_wrapper .dt-scroll-head th:nth-child(4),
+  #descTable_wrapper .dt-scroll-body td:nth-child(4) {
+    width: 58% !important;
+  }
+
+  .formula-cell {
+    font-size: 1.02rem;
+    font-weight: 700;
+    color: #2f3a4c;
+    white-space: nowrap;
+    vertical-align: middle !important;
+  }
+
+  .qn-box {
+    border: 1px solid rgba(114, 182, 197, 0.45);
+    border-radius: 14px;
+    overflow: hidden;
+    background: #fdfefe;
+  }
+
+  .qn-pair-row {
+    display: grid;
+    grid-auto-flow: column;
+    grid-auto-columns: minmax(64px, 1fr);
+    width: 100%;
+  }
+
+  .qn-pair-row-j {
+    grid-template-columns: 1fr;
+    grid-auto-flow: unset;
+    grid-auto-columns: unset;
+  }
+
+  .qn-item {
+    display: grid;
+    grid-template-rows: auto auto;
+    min-width: 0;
+    border-left: 1px dashed rgba(114, 182, 197, 0.35);
+  }
+
+  .qn-item:first-child {
+    border-left: none;
+  }
+
+  .qn-label,
+  .qn-format {
+    padding: 10px 8px;
+    text-align: center;
+    white-space: nowrap;
+  }
+
+  .qn-label {
+    font-weight: 700;
+    font-size: 0.95rem;
+    color: #2f3a4c;
+    background: rgba(255, 255, 255, 0.92);
+    border-bottom: 1px solid rgba(114, 182, 197, 0.35);
+  }
+
+  .qn-format {
+    font-family: 'JetBrains Mono', 'Fira Code', 'Courier New', monospace;
+    font-size: 0.84rem;
+    font-weight: 600;
+    color: #5f7e9f;
+    background: rgba(244, 250, 252, 0.95);
+  }
+
+  .format-badge {
+    display: inline-block;
+    font-family: 'JetBrains Mono', 'Fira Code', monospace;
+    font-size: 0.92rem;
+    color: #33699f;
+    font-weight: 600;
+    letter-spacing: 0.4px;
+  }
+
+  .format-badge.c-fmt {
+    color: #2a876b;
+  }
+
+  .desc-label {
+    text-align: center !important;
+    font-weight: 400;
+    color: #2f3a4c;
+    white-space: normal;
+    font-size: 1.05rem;
+  }
+
+  .desc-text {
+    text-align: left !important;
+    color: #57667a;
+    white-space: normal !important;
+    overflow-wrap: anywhere;
+    word-break: break-word;
+    line-height: 1.45;
+  }
+
+  #isoTable_wrapper .dt-scroll-body,
+  #descTable_wrapper .dt-scroll-body {
+    scrollbar-width: thin;
+    scrollbar-color: rgba(68, 151, 239, 0.95) transparent;
+  }
+
+  #isoTable_wrapper .dt-scroll-body::-webkit-scrollbar,
+  #descTable_wrapper .dt-scroll-body::-webkit-scrollbar {
+    width: 9px;
+    height: 8px;
+  }
+
+  #isoTable_wrapper .dt-scroll-body::-webkit-scrollbar-thumb,
+  #descTable_wrapper .dt-scroll-body::-webkit-scrollbar-thumb {
+    background: linear-gradient(135deg, #72b6c5, #4497ef);
+    border-radius: 999px;
+  }
+
+  #isoTable_wrapper .dt-scroll-body::-webkit-scrollbar-track,
+  #descTable_wrapper .dt-scroll-body::-webkit-scrollbar-track {
+    background: rgba(255, 255, 255, 0.98);
+    border-left: 1px solid rgba(68, 151, 239, 0.16);
+  }
+
+  @media (max-width: 991px) {
+    .qn-shell {
+      padding: 0 8px;
+    }
+
+    .qn-card {
+      padding: 16px;
+      border-radius: 16px;
+    }
+
+    #isoTable {
+      min-width: 950px;
+    }
+
+    #descTable {
+      min-width: 720px;
+    }
+  }
+
+  #descTable {
+    border: 1px solid #4497ef !important;
+    border-radius: 16px !important;
+    border-collapse: separate !important;
+    border-spacing: 0 !important;
+    overflow: hidden !important;
+  }
+</style>
+
+<div class="qn-shell">
+  <div class="qn-card">
+    <h4 class="qn-card-title">Species & Labels & Formats</h4>
+    <p class="qn-card-subtitle">
+      Quantum number labels and corresponding formats for each species in the ExoMolHR Database
+    </p>
+
+    <div class="table-tools">
+      <input id="isoSearchInput" class="search-box" type="search"
+             placeholder="Search molecule, isotopologue, labels or formats">
+    </div>
+
+    <div class="table-surface">
+      <table class="qn-table" id="isoTable">
+        <thead>
+          <tr>
+            <th>Molecule</th>
+            <th>Isotopologue</th>
+            <th>J Format</th>
+            <th>Quantum Number Labels & Formats</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% if iso_list %}
+            {% for row in iso_list %}
+            <tr>
+              <td class="formula-cell">{{ row.molecule_html|safe }}</td>
+              <td class="formula-cell">{{ row.isotopologue_html|safe }}</td>
+
+              <td>
+                <div class="qn-box">
+                  <div class="qn-pair-row qn-pair-row-j">
+                    {% for lbl, fmt in row.J_pair %}
+                    <div class="qn-item">
+                      <div class="qn-label">{{ lbl|safe }}</div>
+                      <div class="qn-format">{{ fmt }}</div>
+                    </div>
+                    {% endfor %}
+                  </div>
+                </div>
+              </td>
+
+              <td>
+                <div class="qn-box">
+                  <div class="qn-pair-row">
+                    {% for lbl, fmt in row.qn_pair %}
+                    <div class="qn-item">
+                      <div class="qn-label">{{ lbl|safe }}</div>
+                      <div class="qn-format">{{ fmt }}</div>
+                    </div>
+                    {% endfor %}
+                  </div>
+                </div>
+              </td>
+            </tr>
+            {% endfor %}
+          {% endif %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <div class="qn-card">
+    <h4 class="qn-card-title">Labels & Formats & Descriptions</h4>
+    <p class="qn-card-subtitle">The formats and descriptions corresponding to quantum number labels</p>
+
+    <div class="table-tools">
+      <input id="descSearchInput" class="search-box" type="search"
+             placeholder="Search label, format, or description">
+    </div>
+
+    <div class="table-surface">
+      <table class="qn-table" id="descTable">
+        <thead>
+          <tr>
+            <th>Label</th>
+            <th>Fortran Format</th>
+            <th>C Format</th>
+            <th>Description</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for row in desc_list %}
+          <tr>
+            <td class="desc-label">{% if row.label %}{{ row.label|safe }}{% endif %}</td>
+            <td>{% if row.fortran %}<span class="format-badge">{{ row.fortran }}</span>{% endif %}</td>
+            <td>{% if row.c %}<span class="format-badge c-fmt">{{ row.c }}</span>{% endif %}</td>
+            <td class="desc-text">{{ row.desc|safe }}</td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+{% endblock %}  

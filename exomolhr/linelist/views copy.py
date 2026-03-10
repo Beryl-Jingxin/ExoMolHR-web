@@ -48,18 +48,15 @@ def qnlabel(request):
             return []
         return [item.strip() for item in value.split(',') if item is not None and item.strip() != '']
 
-    def clean_formula_text(value):
-        if not value:
-            return ''
-        return value.replace('_p', '<sup>+</sup>').replace('-', '')
-
     def molecule_to_html(formula):
-        txt = clean_formula_text((formula or '').strip())
+        # Fallback formatter if DB html is missing.
+        txt = (formula or '').strip()
         txt = re.sub(r'([A-Za-z\)])(\d+)', r'\1<sub>\2</sub>', txt)
         return txt
 
     def iso_slug_to_html(slug):
-        raw = (slug or '').strip().replace('_p', '+')
+        # Fallback formatter from slug (e.g. 1H2-16O -> <sup>1</sup>H<sub>2</sub><sup>16</sup>O)
+        raw = (slug or '').replace('_p', '<sup>+</sup>')
         chunks = []
         for token in raw.split('-'):
             m = re.match(r'^(\d+)([A-Za-z]+)(\d*)$', token)
@@ -70,26 +67,19 @@ def qnlabel(request):
                     part += f"<sub>{count}</sub>"
                 chunks.append(part)
             else:
-                token = token.replace('+', '<sup>+</sup>')
                 token = re.sub(r'([A-Za-z\)])(\d+)', r'\1<sub>\2</sub>', token)
                 chunks.append(token)
         return ''.join(chunks)
 
-    def clean_db_html(value):
-        if not value:
-            return ''
-        return value.replace('_p', '<sup>+</sup>').replace('-', '')
-
     molecule_html_map = {
-        m.ordinary_formula: clean_db_html(m.html) if m.html else molecule_to_html(m.ordinary_formula)
+        m.ordinary_formula: m.html
         for m in Molecule.objects.all().only('ordinary_formula', 'html')
     }
-
     isotopologue_html_map = {
-        i.slug: clean_db_html(i.html) if i.html else iso_slug_to_html(i.slug)
+        i.slug: i.html
         for i in Isotopologue.objects.all().only('slug', 'html')
     }
-
+    
     # Read Iso QN Label Formats
     iso_list = []
     with open('../res/ExoMolHR_list.csv', 'r', encoding='utf-8') as f:
@@ -101,20 +91,22 @@ def qnlabel(request):
             main_fmt = row['Main format']
             qn_lbl = row['QN label']
             qn_fmt = row['QN format']
-
+            
+            # Pair labels and formats by comma-separated tokens.
             main_pairs = list(zip(split_csv_field(main_lbl), split_csv_field(main_fmt)))
-
+            
+            # Only keep the J' column, strip the prime so it strictly shows 'J'
             J_pair = []
             for lbl, fmt in main_pairs:
                 if "J'" in lbl:
                     J_pair.append((lbl.replace("'", ""), fmt))
                     break
-
+                    
             qn_pair = list(zip(split_csv_field(qn_lbl), split_csv_field(qn_fmt)))
 
             molecule_html = molecule_html_map.get(mol, molecule_to_html(mol))
             isotopologue_html = isotopologue_html_map.get(iso, iso_slug_to_html(iso))
-
+            
             iso_list.append({
                 'molecule': mol,
                 'isotopologue': iso,
@@ -123,24 +115,32 @@ def qnlabel(request):
                 'J_pair': J_pair,
                 'qn_pair': qn_pair
             })
-
+            
     # Read QN Label Format Descriptions
     desc_list = []
     with open('../res/qn_label_fmt_desc.csv', 'r', encoding='utf-8') as f:
         reader = csv.DictReader(f)
         for row in reader:
-            label = row['Label']
+            label = row['Label               \\'].strip()
+            # Clean up LaTeX citations
             desc = row['Description']
+            desc = re.sub(r'\\citet\{[^}]+\}', 'Watson et al.', desc)
+            desc = re.sub(r'\\cite\{[^}]+\}', '', desc)
             f_fmt = row['Fortran Format']
             c_fmt = row['C Format']
-
+            
+            # Handle empty labels for continuation rows
+            if not label and desc_list:
+                # This is a continuation row, so we just attach it or we just add a blank label
+                pass
+                
             desc_list.append({
                 'label': label,
                 'fortran': f_fmt,
                 'c': c_fmt,
                 'desc': desc.strip()
             })
-
+            
     context = {
         'iso_list': iso_list,
         'desc_list': desc_list

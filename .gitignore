@@ -26,3 +26,6 @@ db.sqlite3
 
 # PyCharm IDE
 .idea
+
+# Note
+note/

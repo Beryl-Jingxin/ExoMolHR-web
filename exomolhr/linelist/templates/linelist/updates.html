@@ -1,0 +1,194 @@
+{% extends 'theme/base.html' %}
+
+{% block content %}
+<style>
+  .updates-wrap {
+    max-width: 1050px;
+    margin: 2.2rem auto 3rem;
+    padding: 0 1rem;
+  }
+
+  .updates-card {
+    background: linear-gradient(140deg, rgba(255, 255, 255, 0.94), rgba(245, 248, 251, 0.9));
+    border-radius: 18px;
+    box-shadow: 0 18px 45px rgba(15, 35, 60, 0.12);
+    overflow: hidden;
+  }
+
+  .updates-head {
+    padding: 1.5rem 1.8rem;
+    border-bottom: 1px solid rgba(18, 52, 86, 0.1);
+    background: rgba(255, 255, 255, 0.62);
+  }
+
+  .updates-title { 
+    margin: 0;
+    font-size: 2.2rem;
+    font-weight: 800;
+    color: #15314f;
+    letter-spacing: 0.01em;
+  }
+
+  .updates-subtitle {
+    margin: 0.5rem 0 0;
+    font-size: 1.1rem;
+    color: #4a5f75;
+  }
+
+  .updates-body {
+    padding: 2rem 1.8rem;
+  }
+
+  .update-entry {
+    display: flex;
+    margin-bottom: 2rem;
+    background: #ffffff;
+    border-radius: 18px;
+    overflow: hidden;
+    transition: transform 0.3s ease, box-shadow 0.3s ease;
+    box-shadow: 0 5px 20px rgba(0,0,0,0.04);
+    border: 1px solid rgba(18, 52, 86, 0.05);
+  }
+
+  .update-entry:last-child {
+      margin-bottom: 0;
+  }
+
+  .update-entry:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 15px 35px rgba(15, 35, 60, 0.08);
+  }
+
+  .update-date-col {
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    min-width: 120px;
+    padding: 1.8rem 1rem;
+    color: #ffffff;
+    text-align: center;
+  }
+  
+  .update-date-col .month-year {
+    font-size: 1.8rem;
+    font-weight: 800;
+    line-height: 1;
+    margin-bottom: 0.3rem;
+  }
+  
+  .update-date-col .day {
+    font-size: 1rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    line-height: 1.3;
+    opacity: 0.95;
+  }
+
+  .update-content-col {
+    padding: 2rem 2.2rem;
+    flex: 1;
+    text-align: left;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+  }
+
+  .update-title-col {
+    font-size: 1.45rem;
+    font-weight: 700;
+    color: #15314f;
+    margin-bottom: 0.8rem;
+    line-height: 1.3;
+  }
+
+  .update-entry-content {
+    font-size: 1.05rem;
+    line-height: 1.7;
+    color: #334155;
+    text-align: left;
+    white-space: pre-wrap;
+    margin-bottom: 0;
+  }
+
+  @media (max-width: 768px) {
+    .updates-wrap {
+      margin-top: 1.25rem;
+      padding: 0 0.8rem;
+    }
+
+    .updates-head,
+    .updates-body {
+      padding: 1.2rem;
+    }
+    
+    .updates-title {
+        font-size: 1.8rem;
+    }
+    
+    .update-entry {
+        flex-direction: column;
+    }
+    
+    .update-date-col {
+        min-width: 100%;
+        padding: 1rem;
+        flex-direction: row;
+        justify-content: center;
+        gap: 15px;
+    }
+    
+    .update-date-col .month-year {
+        font-size: 1.5rem;
+        margin-bottom: 0;
+    }
+    
+    .update-date-col .day {
+        font-size: 1rem;
+    }
+    
+    .update-content-col {
+        padding: 1.5rem;
+    }
+  }
+</style>
+
+<div class="updates-wrap">
+    <section class="updates-card" aria-labelledby="updates-title">
+        <header class="updates-head">
+            <h3 class="updates-title" id="updates-title">Recent Updates</h3>
+            <p class="updates-subtitle">Stay informed about the newest data and feature releases.</p>
+        </header>
+
+        <div class="updates-body">
+            {% if all_updates %}
+                {% for update in all_updates %}
+                <div class="update-entry" {% if update.is_highlighted %}style="border: 2px solid #FF8E53; box-shadow: 0 10px 30px rgba(255, 107, 107, 0.15);"{% endif %}>
+                    {% if update.is_highlighted %}
+                    <div class="update-date-col" style="background: linear-gradient(135deg, #FF6B6B, #FF8E53);">
+                    {% else %}
+                    <div class="update-date-col" style="background-color: {% cycle '#BFDFD2' '#51999F' '#4198AC' '#7BC0CD' '#DBCB92' '#ECB66C' '#EA9E58' '#ED8D5A' %};">
+                    {% endif %}
+                        <span class="month-year">{{ update.date|date:"Y" }}</span>
+                        <span class="day">{{ update.date|date:"d M" }}</span>
+                    </div>
+                    <div class="update-content-col">
+                        <h4 class="update-title-col">
+                            {{ update.title|safe }}
+                            {% if update.is_highlighted %}
+                            <span class="badge rounded-pill ms-2" style="background: linear-gradient(135deg, #FF6B6B, #FF8E53); color: #ffffff; font-size: 0.85rem; vertical-align: middle; padding: 0.25em 0.8em; letter-spacing: 0.5px; display: inline-flex; align-items: center; justify-content: center; transform: translateY(-3px); height: 24px;">🔥 IMPORTANT</span>
+                            {% endif %}
+                        </h4>
+                        <div class="update-entry-content">{{ update.content|safe }}</div>
+                    </div>
+                </div>
+                {% endfor %}
+            {% else %}
+                <p class="text-muted fs-5">No updates available at the moment.</p>
+            {% endif %}
+        </div>
+    </section>
+</div>
+
+{% endblock %}
