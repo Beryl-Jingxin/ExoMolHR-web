@@ -198,8 +198,10 @@ def select_isotopologues(request, selected_molecules):
         hrmeta = iso.hrmeta_set.first()
         if hrmeta:
             iso.pf_file = "__".join(f for f in hrmeta.data_filename.split("__")[1:]) + ".pf"
+            iso.data_filename = hrmeta.data_filename
         else:
             iso.pf_file = f"{iso.slug}.pf"
+            iso.data_filename = None
             
         # Bind the matched Tmax, default to N/A if missing
         iso.tmax = tmax_dict.get(iso.slug, 'N/A')
@@ -370,6 +372,23 @@ def download_archive(request):
         return FileResponse(open(file_path, "rb"), as_attachment=True, filename=archive_name)
     else:
         raise Http404("File not found in results directory.")
+
+
+def download_csv(request, csv_filename):
+    import os
+    from pathlib import Path
+    
+    # Ensure it only accesses the intended directory
+    safe_filename = os.path.basename(csv_filename)
+    if not safe_filename.endswith('.csv'):
+        safe_filename += '.csv'
+        
+    file_path = Path('/mnt/data/exomolhr/exomolhr_data') / safe_filename
+    
+    if file_path.exists():
+        return FileResponse(open(file_path, "rb"), as_attachment=True, filename=safe_filename)
+    else:
+        raise Http404("CSV file not found.")
 
 
 def ajax_data(request):

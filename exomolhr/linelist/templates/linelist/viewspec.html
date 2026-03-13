@@ -120,12 +120,67 @@
     /* Bokeh plot container */
     .plot-container {
         width: 100%;
+        min-height: 400px;
+        position: relative;
         background: white;
         border-radius: 12px;
         padding: 15px;
         box-shadow: inset 0 2px 10px rgba(0,0,0,0.02);
         border: 1px solid #e9ecef;
         overflow-x: auto;
+    }
+
+    /* Animated Loader for Plot */
+    .plot-loader {
+        position: absolute;
+        top: 0; left: 0; right: 0; bottom: 0;
+        background: rgba(255, 255, 255, 0.85);
+        backdrop-filter: blur(5px);
+        -webkit-backdrop-filter: blur(5px);
+        z-index: 10;
+        display: flex;
+        flex-direction: column;
+        justify-content: center;
+        align-items: center;
+        border-radius: 12px;
+        transition: opacity 0.5s ease;
+    }
+
+    .spinner {
+        width: 50px;
+        height: 50px;
+        border: 4px solid #e9ecef;
+        border-top: 4px solid #4497ef;
+        border-right: 4px solid #72b6c5;
+        border-radius: 50%;
+        animation: spin 1s linear infinite;
+        margin-bottom: 20px;
+        box-shadow: 0 4px 10px rgba(68, 151, 239, 0.2);
+    }
+
+    @keyframes spin {
+        0% { transform: rotate(0deg); }
+        100% { transform: rotate(360deg); }
+    }
+
+    .loader-text {
+        font-family: 'Josefin Sans', sans-serif;
+        font-size: 1.3rem;
+        font-weight: 800;
+        color: #2c3e50;
+        letter-spacing: 1px;
+        background: linear-gradient(135deg, #4497ef, #27ae60);
+        -webkit-background-clip: text;
+        -webkit-text-fill-color: transparent;
+    }
+
+    .loader-subtext {
+        font-size: 0.95rem;
+        color: #6c757d;
+        margin-top: 8px;
+        font-weight: 600;
+        max-width: 80%;
+        text-align: center;
     }
     
     .legend-hint {
@@ -190,6 +245,13 @@
     <div class="glass-panel" style="padding: 20px 25px;">
         <div class="legend-hint">💡 Click on legend entries inside the plot to hide/show the corresponding spectrum</div>
         <div class="plot-container">
+            <!-- Loading Indicator -->
+            <div id="plot-loader" class="plot-loader">
+                <div class="spinner"></div>
+                <div class="loader-text">Plotting...</div>
+                <div class="loader-subtext">Large amount of data, please wait for the browser to render</div>
+            </div>
+
             {{ bokeh_html|safe }}
         </div>
         
@@ -198,6 +260,62 @@
         </div>
     </div>
 </div>
+
+<script>
+    document.addEventListener("DOMContentLoaded", function() {
+        var plotContainer = document.querySelector('.plot-container');
+        var loader = document.getElementById('plot-loader');
+        
+        if (loader && plotContainer) {
+            // Polling to wait for the Bokeh canvas to be created
+            var checkExist = setInterval(function() {
+                var isRendered = false;
+                
+                // 1. Check for canvas in shadow DOM (Bokeh 3.x uses Shadow DOM)
+                var bkRoot = plotContainer.querySelector('.bk-root');
+                if (bkRoot && bkRoot.shadowRoot && bkRoot.shadowRoot.querySelector('canvas')) {
+                    isRendered = true;
+                }
+                
+                // 2. Check for canvas in normal DOM
+                if (!isRendered && plotContainer.querySelector('canvas')) {
+                    isRendered = true;
+                }
+
+                // 3. Fallback: check if Bokeh.index has views registered
+                if (!isRendered && window.Bokeh && window.Bokeh.index) {
+                     if (window.Bokeh.index instanceof Map && window.Bokeh.index.size > 0) {
+                         isRendered = true;
+                     } else if (!(window.Bokeh.index instanceof Map) && Object.keys(window.Bokeh.index).length > 0) {
+                         isRendered = true;
+                     }
+                }
+
+                if (isRendered) {
+                    // Canvas created or Bokeh rendered! Give it a slight delay to allow painting.
+                    setTimeout(function() {
+                        loader.style.opacity = '0';
+                        setTimeout(function() {
+                            loader.style.display = 'none';
+                        }, 500); // Match transition duration
+                    }, 500); // 0.5s buffer for paint
+                    
+                    clearInterval(checkExist);
+                }
+            }, 300); // Check every 300ms
+            
+            // Fallback: Remove loader after 60 seconds anyway to prevent eternal hiding
+            setTimeout(function() {
+                if (loader.style.display !== 'none') {
+                    loader.style.opacity = '0';
+                    setTimeout(function() {
+                        loader.style.display = 'none';
+                    }, 500);
+                }
+            }, 60000);
+        }
+    });
+</script>
 
 {% endblock content %}
 
