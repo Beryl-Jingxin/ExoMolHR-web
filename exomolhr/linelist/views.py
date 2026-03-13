@@ -29,7 +29,7 @@ from .utils import make_decimal_timestamp, make_zip_bundle
 
 
 def home(request):
-    df = pd.read_csv('../res/ExoMolHR_list.csv')
+    df = pd.read_csv(settings.RES_DIR / 'ExoMolHR_list.csv')
     recent_updates = SiteUpdate.objects.all().order_by('-date', '-id')[:10]
     context = {
         'total_lines': f"{int(df['HR N lines'].sum()):,}",
@@ -92,7 +92,7 @@ def qnlabel(request):
 
     # Read Iso QN Label Formats
     iso_list = []
-    with open('../res/ExoMolHR_list.csv', 'r', encoding='utf-8') as f:
+    with open(settings.RES_DIR / 'ExoMolHR_list.csv', 'r', encoding='utf-8') as f:
         reader = csv.DictReader(f)
         for row in reader:
             mol = row['molecule']
@@ -126,7 +126,7 @@ def qnlabel(request):
 
     # Read QN Label Format Descriptions
     desc_list = []
-    with open('../res/qn_label_fmt_desc.csv', 'r', encoding='utf-8') as f:
+    with open(settings.RES_DIR / 'qn_label_fmt_desc.csv', 'r', encoding='utf-8') as f:
         reader = csv.DictReader(f)
         for row in reader:
             label = row['Label']
@@ -149,7 +149,7 @@ def qnlabel(request):
 
 
 def about(request):
-    df = pd.read_csv('../res/ExoMolHR_list.csv')
+    df = pd.read_csv(settings.RES_DIR / 'ExoMolHR_list.csv')
     context = {
         'total_lines': f"{int(df['HR N lines'].sum()):,}",
         'num_iso': df['iso-slug'].count(),
@@ -188,7 +188,7 @@ def select_isotopologues(request, selected_molecules):
     
     # Load Tmax data from CSV
     try:
-        df = pd.read_csv('../res/ExoMolHR_list.csv')
+        df = pd.read_csv(settings.RES_DIR / 'ExoMolHR_list.csv')
         tmax_df = df[['iso-slug', 'Tmax']].dropna(subset=['Tmax'])
         tmax_dict = dict(zip(tmax_df['iso-slug'], tmax_df['Tmax'].astype(int)))
     except Exception:
@@ -227,7 +227,7 @@ def select_filters(request, iso_slugs):
 
     # Load Tmax, vmin, vmax data from CSV
     try:
-        df = pd.read_csv('../res/ExoMolHR_list.csv')
+        df = pd.read_csv(settings.RES_DIR / 'ExoMolHR_list.csv')
         tmax_df = df[['iso-slug', 'Tmax']].dropna(subset=['Tmax'])
         tmax_dict = dict(zip(tmax_df['iso-slug'], tmax_df['Tmax'].astype(int)))
         vmin_dict = dict(zip(df['iso-slug'], df['vmin']))
@@ -377,18 +377,30 @@ def download_archive(request):
 def download_csv(request, csv_filename):
     import os
     from pathlib import Path
+    import mimetypes
     
     # Ensure it only accesses the intended directory
-    safe_filename = os.path.basename(csv_filename)
-    if not safe_filename.endswith('.csv'):
+    safe_filename = os.path.basename(csv_filename).strip()
+    
+    # If no extension is provided, default to .csv
+    if '.' not in safe_filename:
         safe_filename += '.csv'
         
     file_path = Path('/mnt/data/exomolhr/exomolhr_data') / safe_filename
     
     if file_path.exists():
-        return FileResponse(open(file_path, "rb"), as_attachment=True, filename=safe_filename)
+        content_type, encoding = mimetypes.guess_type(str(file_path))
+        if not content_type:
+            content_type = 'text/plain'
+            
+        # USER REQUEST: .json and .pf should display inline (as_attachment=False)
+        # .csv should be downloaded directly (as_attachment=True)
+        is_inline = any(safe_filename.endswith(ext) for ext in ['.json', '.pf'])
+        as_attachment = not is_inline
+        
+        return FileResponse(open(file_path, "rb"), content_type=content_type, as_attachment=as_attachment, filename=safe_filename)
     else:
-        raise Http404("CSV file not found.")
+        raise Http404(f"File '{safe_filename}' not found.")
 
 
 def ajax_data(request):

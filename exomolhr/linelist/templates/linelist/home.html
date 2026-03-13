@@ -63,9 +63,10 @@
 
   /* Updates log style */
   .updates-container {
-    max-height: 400px;
+    height: 500px; /* Matches 2 rows of tiles on the left (+ margins/padding) */
     overflow-y: auto;
-    padding-right: 15px;
+    padding: 10px 15px 5px 5px; /* Top padding to prevent clipping on hover */
+    margin-top: -10px; /* Pull up to compensate for padding */
   }
 
   .updates-container::-webkit-scrollbar {
@@ -314,7 +315,7 @@
                 <div class="home-head">
                     <h2 class="section-title text-center">Recent Updates</h2>
                 </div>
-                <div class="home-body" style="padding: 1.5rem 1.2rem;">
+                <div class="home-body">
                     <div class="updates-container">
                         {% if recent_updates %}
                             {% for update in recent_updates %}
