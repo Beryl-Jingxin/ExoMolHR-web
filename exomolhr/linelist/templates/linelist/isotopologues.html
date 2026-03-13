@@ -321,7 +321,7 @@
     <form id="isotopologueForm" method="GET" action="{% url 'linelist:get_linelist' %}">
 
         <!-- Controls Container -->
-        <div class="controls-container mx-auto" style="max-width: 1000px;">
+        <div class="controls-container mx-auto" style="max-width: 1100px;">
             <!-- Alphabetic Filter -->
             <div class="alpha-filter-wrapper align-items-center" id="alphaFilter">
                 <button type="button" class="alpha-btn-all alpha-btn active" data-letter="ALL">All</button>
@@ -372,7 +372,7 @@
             </div>
         </div>
 
-        <div class="table-card mx-auto" style="max-width: 1000px;">
+        <div class="table-card mx-auto" style="max-width: 1100px;">
             <div style="text-align: center; margin-bottom: 20px;">
                 <p class="font-weight-bold mb-0" style="font-size: 1.15rem; color:#495057;">
                     Selected (<span id="selectedCount" style="color:#6fbd8f; font-weight:800;">0</span>)
@@ -391,6 +391,7 @@
                                 <th>MASS (Da)</th>
                                 <th><i>T</i><sub>max</sub> (K)</th>
                                 <th>PARTITION FUNCTION</th>
+                                <th>DOWNLOAD CSV</th>
                                 <th class="text-center" style="vertical-align: middle;">
                                     <label for="select-all" class="d-block mb-1" style="font-size: 0.85rem; cursor:pointer;">SELECT ALL</label>
                                     <div class="checkbox-wrapper">
@@ -421,6 +422,21 @@
                             <td>{{ iso.tmax }}</td>
                             <td style="white-space: nowrap;">
                                 <a href="{% url 'linelist:view_pf' iso.pf_file %}" target="_blank">{{ iso.pf_file }}</a>
+                            </td>
+                            <td class="text-center">
+                                {% if iso.data_filename %}
+                                <a href="/db/{{ iso.data_filename }}.csv/" style="color: #4497ef; transition: color 0.2s;" onmouseover="this.style.color='#6fbd8f'" onmouseout="this.style.color='#4497ef'">
+                                    <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" fill="currentColor" class="bi bi-cloud-arrow-down-fill" viewBox="0 0 16 16">
+                                      <path d="M8 2a5.53 5.53 0 0 0-3.594 1.342c-.766.66-1.321 1.52-1.464 2.383C1.266 6.095 0 7.555 0 9.318 0 11.366 1.708 13 3.781 13h8.906C14.502 13 16 11.57 16 9.773c0-1.636-1.242-2.969-2.834-3.194C12.923 3.999 10.69 2 8 2m2.354 6.854-2 2a.5.5 0 0 1-.708 0l-2-2a.5.5 0 1 1 .708-.708L7.5 9.293V5.5a.5.5 0 0 1 1 0v3.793l1.146-1.147a.5.5 0 0 1 .708.708z"/>
+                                    </svg>
+                                </a>
+                                {% else %}
+                                <span style="color: #ced4da; cursor: not-allowed;">
+                                    <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" fill="currentColor" class="bi bi-cloud-arrow-down-fill" viewBox="0 0 16 16">
+                                      <path d="M8 2a5.53 5.53 0 0 0-3.594 1.342c-.766.66-1.321 1.52-1.464 2.383C1.266 6.095 0 7.555 0 9.318 0 11.366 1.708 13 3.781 13h8.906C14.502 13 16 11.57 16 9.773c0-1.636-1.242-2.969-2.834-3.194C12.923 3.999 10.69 2 8 2m2.354 6.854-2 2a.5.5 0 0 1-.708 0l-2-2a.5.5 0 1 1 .708-.708L7.5 9.293V5.5a.5.5 0 0 1 1 0v3.793l1.146-1.147a.5.5 0 0 1 .708.708z"/>
+                                    </svg>
+                                </span>
+                                {% endif %}
                             </td>
                             <td class="text-center">
                                 <div class="checkbox-wrapper">
