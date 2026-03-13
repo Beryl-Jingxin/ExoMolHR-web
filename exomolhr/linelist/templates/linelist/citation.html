@@ -1,0 +1,184 @@
+{% extends 'theme/base.html' %}
+
+{% block content %}
+<style>
+  .citation-wrap {
+    max-width: 1050px;
+    margin: 2.2rem auto 3rem;
+    padding: 0 1rem;
+  }
+
+  .citation-card {
+    background: linear-gradient(140deg, rgba(255, 255, 255, 0.94), rgba(245, 248, 251, 0.9));
+    border-radius: 18px;
+    box-shadow: 0 18px 45px rgba(15, 35, 60, 0.12);
+    overflow: hidden;
+  }
+
+  .citation-head {
+    padding: 1.5rem 1.8rem;
+    border-bottom: 1px solid rgba(18, 52, 86, 0.1);
+    background: rgba(255, 255, 255, 0.62);
+  }
+
+  .citation-title {
+    margin: 0;
+    font-size: 2.2rem;
+    font-weight: 800;
+    color: #15314f;
+    letter-spacing: 0.01em;
+  }
+
+  .citation-subtitle {
+    margin: 0.5rem 0 0;
+    font-size: 1.1rem;
+    color: #4a5f75;
+  }
+
+  .citation-body {
+    padding: 2rem 1.8rem;
+  }
+
+  .citation-code {
+    margin: 0;
+    padding: 1rem 1rem;
+    background: #dbe9f7;
+    color: #4a5f75;
+    border: 1px solid rgba(123, 176, 229, 0.22);
+    border-radius: 12px;
+    font-size: 0.9rem;
+    line-height: 1.55;
+    text-align: left;
+    white-space: pre-wrap;
+    overflow-x: auto;
+  }
+
+  .citation-actions {
+    margin-top: 1rem;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.55rem;
+  }
+
+  .citation-btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    padding: 0.5rem 1rem;
+    border-radius: 1000px;
+    font-weight: 600;
+    text-decoration: none;
+    border: 1px solid transparent;
+    transition: all 0.2s ease;
+  }
+
+  .citation-btn-primary {
+    color: #ffffff;
+    background: #6fbd8f;   
+  }
+
+  .citation-btn-primary:hover {
+    background: #e6a953;
+    color: #ffffff;
+  }
+
+  .citation-btn-secondary {
+    color: #ffffff;
+    background: #47a49d; 
+  }
+
+  .citation-btn-secondary:hover {
+    background: #e6a953;
+    color: #ffffff;
+  }
+
+  .citation-btn-copy {
+    color: #46484b;
+    background: #9acda2;
+    margin-left: auto;
+  }
+
+  .citation-btn-copy:hover {
+    background: #c3dec7ff;
+    color: #46484b;
+  }
+
+  .citation-copy-status {
+    margin-left: 0.25rem;
+    font-size: 0.88rem;
+    color: #46484b;
+  }
+
+  @media (max-width: 768px) {
+    .citation-wrap {
+      margin-top: 1.25rem;
+      padding: 0 0.8rem;
+    }
+
+    .citation-head,
+    .citation-body {
+      padding: 1rem;
+    }
+
+    .citation-code {
+      font-size: 0.86rem;
+    }
+  }
+</style>
+
+<div class="citation-wrap">
+    <section class="citation-card" aria-labelledby="citation-title">
+        <header class="citation-head">
+            <h3 class="citation-title" id="citation-title">Citation</h3>
+            <p class="citation-subtitle">Please cite ExoMolHR using the BibTeX entry below:</p>
+        </header>
+
+        <div class="citation-body">
+<pre class="citation-code"><code id="bibtex-text">@article{ExoMolHR,
+    title     = {% templatetag openvariable %}ExoMolHR: A Relational Database of Empirical High-resolution Molecular Spectra{% templatetag closevariable %},
+    author    = {Zhang, Jingxin and Hill, Christian and Tennyson, Jonathan and Yurchenko, Sergei N.},
+    journal   = {The Astrophysical Journal Supplement Series},
+    volume    = {276},
+    number    = {2},
+    pages     = {67},
+    year      = {2025},
+    publisher = {American Astronomical Society},
+    issn      = {1538-4365},
+    doi       = {10.3847/1538-4365/ada288},
+    url       = {https://doi.org/10.3847/1538-4365/ada288}
+}</code></pre>
+
+            <div class="citation-actions">
+                <a class="citation-btn citation-btn-primary" href="https://doi.org/10.3847/1538-4365/ada288" target="_blank" rel="noopener noreferrer">
+                    Open DOI
+                </a>
+                <a class="citation-btn citation-btn-secondary" href="https://ui.adsabs.harvard.edu/abs/2025ApJS..276...67Z/abstract" target="_blank" rel="noopener noreferrer">
+                    ADS Abstract
+                </a>
+                <button class="citation-btn citation-btn-copy" type="button" id="copy-bibtex" data-copy-target="bibtex-text">
+                    Copy BibTeX
+                </button>
+            </div>
+        </div>
+    </section>
+</div>
+
+<script>
+  (function () {
+    var copyButton = document.getElementById('copy-bibtex');
+    if (!copyButton || !navigator.clipboard) return;
+
+    copyButton.addEventListener('click', function () {
+      var targetId = copyButton.getAttribute('data-copy-target');
+      var target = document.getElementById(targetId);
+      if (!target) return;
+
+      var text = target.textContent;
+      navigator.clipboard.writeText(text).catch(function () {
+        // Silent failure; no visible "copied" message required
+      });
+    });
+  })();
+</script>
+
+{% endblock %}

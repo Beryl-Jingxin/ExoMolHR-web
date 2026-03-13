@@ -2,61 +2,457 @@
 
 {% block content %}
 
-    <div class="card-body">
-        <h3 class="card-title">Isotopologues</h3>
-        <p class="card-text">Step 2: Choose isotopologues</p>
-    </div>
+<div class="card-body">
+    <h3 class="card-title" style="font-weight:700; color:#333;">Isotopologues</h3>
+    <span style="display:inline-block; background: linear-gradient(135deg, #4497ef, #72b6c5); color: white; font-size: 0.8rem; font-weight: 700; padding: 4px 10px; border-radius: 20px; letter-spacing: 1px; text-transform: uppercase; margin-top: 6px; margin-bottom: 6px;">Step 2</span>
+    <p class="card-text text-muted" style="font-size: 1.1rem; margin-top: 8px;">Select Isotopologues</p>
+</div>
 
-    <div class="container text-center">
+<style>
+    /* Modern Glassmorphism & Aesthetics */
+    .controls-container, .table-card {
+        background: linear-gradient(135deg, rgba(255, 255, 255, 0.7), rgba(255, 255, 255, 0.3));
+        backdrop-filter: blur(15px);
+        -webkit-backdrop-filter: blur(15px);
+        border-radius: 20px;
+        padding: 30px;
+        margin-bottom: 35px;
+        box-shadow: 0 10px 40px 0 rgba(31, 38, 135, 0.1);
+        border: 1px solid rgba(255, 255, 255, 0.5);
+    }
+    
+    .form-control {
+        border-radius: 15px;
+        border: 1px solid #ced4da;
+        padding: 12px 15px;
+        font-size: 1rem;
+        box-shadow: inset 0 2px 4px rgba(0,0,0,0.02);
+        transition: all 0.3s ease;
+    }
+    .form-control:focus {
+        box-shadow: 0 0 0 0.25rem rgba(0, 123, 255, 0.25);
+        border-color: #80bdff;
+    }
+    
+    .btn-custom {
+        border-radius: 15px;
+        font-weight: 600;
+        letter-spacing: 0.5px;
+        transition: all 0.3s ease;
+        box-shadow: 0 4px 10px rgba(0,0,0,0.1);
+    }
+    .btn-custom:hover {
+        transform: translateY(-3px);
+        box-shadow: 0 8px 15px rgba(0,0,0,0.15);
+    }
+    
+    /* Alphabetic Filter Layout */
+    .alpha-filter-wrapper {
+        display: flex;
+        align-items: stretch;
+        justify-content: center;
+        gap: 20px;
+        margin-bottom: 30px;
+    }
 
-        <form id="isotopologueForm" method="GET" action="{% url 'linelist:get_linelist' %}">
+    .alpha-btn-all {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        padding: 0 25px;
+        border-radius: 15px;
+        border: none;
+        background: linear-gradient(145deg, #ffffff, #e6e6e6);
+        color: #495057;
+        font-weight: 800;
+        font-size: 1.2rem;
+        cursor: pointer;
+        transition: all 0.3s ease;
+        box-shadow: 0 4px 15px rgba(0,0,0,0.05);
+        height: 96px;
+    }
+    .alpha-btn-all:hover, .alpha-btn-all.active {
+        background: #4497efff;
+        color: white;
+        transform: scale(1.05);
+        box-shadow: 0 8px 20px rgba(0,123,255,0.4);
+    }
 
-           <button type="submit" class="btn btn-primary">Submit</button> 
+    .alpha-letters-grid {
+        display: flex;
+        flex-wrap: wrap;
+        justify-content: center;
+        gap: 12px;
+        max-width: 780px;
+    }
 
-        <p>Selected Isotopologues: <span id="selectedIsotopologues"></span></p>
+    .alpha-btn {
+        width: 42px;
+        height: 42px;
+        border-radius: 10px;
+        border: none;
+        background: white;
+        color: #495057;
+        font-weight: 700;
+        font-size: 1.1rem;
+        cursor: pointer;
+        transition: all 0.2s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+        display:flex;
+        align-items: center;
+        justify-content: center;
+        box-shadow: 0 2px 8px rgba(0,0,0,0.06);
+    }
+    .alpha-btn:hover {
+        transform: translateY(-4px) scale(1.1);
+        background: #f8f9fa;
+        color: #4497efff;
+        box-shadow: 0 8px 15px rgba(0,0,0,0.1);
+    }
+    .alpha-btn.active {
+        background: #4497efff;
+        color: white;
+        transform: translateY(-2px) scale(1.1);
+        box-shadow: 0 8px 15px rgba(0,123,255,0.3);
+    }
 
-            
-           <div class="row justify-content-center table-responsive">
-                <table class="table table-bordered table-hover align-middle mx-auto" id="dataTable" style="width:auto;">
-                    <thead>
-                        <tr>
-                            <th>Molecule</th>
-                            <th>Isotopologue</th>
-                            <th>Mass (Da)</th>
-                            <th><input id="select-all" type="checkbox" name="select-all" value="select-all"/></th>
-                        </tr>
-                    </thead>
+    /* Table Enhancements */
+    .table-container {
+        padding: 0;
+    }
+    .table-wrapper-fix {
+        border-radius: 15px;
+        border: 2px solid #8bbd65;
+        background: rgba(255, 255, 255, 0.8);
+        box-shadow: 0 4px 6px rgba(0,0,0,0.05);
+        overflow-x: auto;
+        overflow-y: auto;
+        max-height: 550px;
+    }
+    
+    .table-custom {
+        background: transparent;
+        font-family: 'Josefin Sans', sans-serif;
+        font-size: 1.1rem;
+        width: 100%;
+        min-width: 900px;
+        margin: 0 auto;
+        border-collapse: separate;
+        border-spacing: 0;
+    }
+    .table-custom thead th {
+        border-bottom: 2px solid rgba(0,0,0,0.05);
+        background: #8bbd65;
+        font-weight: 800;
+        color: white;
+        letter-spacing: 1px;
+        padding: 20px 15px;
+        position: sticky;
+        top: 0;
+        z-index: 10;
+        text-align: center;
+        vertical-align: middle;
+    }
+    
+    .table-custom thead th.col-divider {
+        border-right: 2px solid rgba(255,255,255,0.4);
+    }
+    
+    .table-custom tbody td {
+        padding: 15px;
+        vertical-align: middle;
+        text-align: center;
+        border-bottom: 1px solid rgba(0,0,0,0.03);
+    }
+    
+    .table-custom tbody td.col-divider {
+        border-right: 2px solid rgba(0,0,0,0.1);
+    }
+    
+    .table-custom tbody tr:last-child td {
+        border-bottom: none;
+    }
+    
+    .table-custom tbody tr {
+        transition: background-color 0.2s ease;
+        animation: fadeInRow 0.5s ease-out forwards;
+        opacity: 0;
+        background-color: transparent;
+    }
+    
+    /* Staggered animation delay for rows */
+    .table-custom tbody tr:nth-child(1) { animation-delay: 0.05s; }
+    .table-custom tbody tr:nth-child(2) { animation-delay: 0.1s; }
+    .table-custom tbody tr:nth-child(n+3) { opacity: 1; animation: none; }
 
-                    <tbody>
-                        {% regroup isos by molecule as molecule_list %}
-                        {% for molecule in molecule_list %}
-                        <tr>
-                            <td rowspan="{{ molecule.list|length }}" style="vertical-align : middle;">
+    /* Row hover highlight (applied via JS) */
+    .table-custom tbody tr.row-hover td {
+        background-color: #afdae4c6 !important;
+    }
+    .table-custom tbody td.mol-cell-hover {
+        background-color: #afdae4c6 !important;
+    }
+
+    .table-custom tbody tr:nth-child(3) { animation-delay: 0.15s; }
+    .table-custom tbody tr:nth-child(4) { animation-delay: 0.2s; }
+    .table-custom tbody tr:nth-child(5) { animation-delay: 0.25s; }
+    .table-custom tbody tr:nth-child(n+6) { opacity: 1; animation: none; }
+
+    .table-custom tbody tr:hover {
+        /* Hover handled via JavaScript for molecule-group coordination */
+    }
+
+    /* Checkbox Fix */
+    .checkbox-wrapper {
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        height: 100%;
+        width: 100%;
+    }
+    .molecule-checkbox, .iso-checkbox, #select-all {
+        appearance: none;
+        -webkit-appearance: none;
+        width: 22px;
+        height: 22px;
+        border: 2px solid #adb5bd;
+        border-radius: 4px;
+        background-color: white;
+        display: inline-block;
+        position: relative;
+        cursor: pointer;
+        transition: all 0.2s ease;
+        margin: 0;
+        vertical-align: middle;
+    }
+    .molecule-checkbox:checked, .iso-checkbox:checked, #select-all:checked {
+        background-color: #6fbd8f;
+        border-color: #6fbd8f;
+    }
+    .molecule-checkbox:checked::after, .iso-checkbox:checked::after, #select-all:checked::after {
+        content: '';
+        position: absolute;
+        left: 6px;
+        top: 2px;
+        width: 6px;
+        height: 12px;
+        border: solid white;
+        border-width: 0 2px 2px 0;
+        transform: rotate(45deg);
+    }
+    
+    .btn-submit {
+        background: #4497efff;
+        color: white;
+        border: none;
+        border-radius: 15px;
+        font-weight: 800;
+        font-size: 1.3rem;
+        height: 96px;
+        width: 140px;
+        letter-spacing: 1px;
+        box-shadow: 0 8px 20px rgba(0, 123, 255, 0.4);
+        transition: all 0.3s ease;
+        text-transform: uppercase;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        position: relative;
+        overflow: hidden;
+    }
+    .btn-submit:hover {
+        transform: translateY(-4px) scale(1.05);
+        box-shadow: 0 12px 25px rgba(0, 123, 255, 0.6);
+        color: white;
+    }
+
+    @keyframes fadeInRow {
+        from { opacity: 0; transform: translateY(15px); }
+        to { opacity: 1; transform: translateY(0); }
+    }
+    
+    /* Dynamic Grid Layout for Selected Elements */
+    .selected-items-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, var(--col-width, 100px));
+        gap: 10px 25px;
+        align-items: center;
+        color: #007bff;
+        font-weight: normal;
+        margin-top: 10px;
+    }
+    
+    .controls-bottom-row {
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        gap: 20px;
+        margin-top: 15px;
+    }
+
+    .btn-action-sm {
+        background: #72b6c5;
+        color: white;
+        border: none;
+        border-radius: 10px;
+        font-weight: 600;
+        font-size: 0.9rem;
+        padding: 8px 20px;
+        letter-spacing: 0.5px;
+        box-shadow: 0 4px 12px rgba(114, 182, 197, 0.3);
+        transition: all 0.3s ease;
+        cursor: pointer;
+    }
+    .btn-action-sm:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 6px 16px rgba(114, 182, 197, 0.5);
+        color: white;
+    }
+    .btn-action-sm.btn-back {
+        background: #adb5bd;
+        box-shadow: 0 4px 12px rgba(173, 181, 189, 0.3);
+    }
+    .btn-action-sm.btn-back:hover {
+        box-shadow: 0 6px 16px rgba(173, 181, 189, 0.5);
+    }
+</style>
+
+<div class="container text-center">
+
+    <form id="isotopologueForm" method="GET" action="{% url 'linelist:get_linelist' %}">
+
+        <!-- Controls Container -->
+        <div class="controls-container mx-auto" style="max-width: 1100px;">
+            <!-- Alphabetic Filter -->
+            <div class="alpha-filter-wrapper align-items-center" id="alphaFilter">
+                <button type="button" class="alpha-btn-all alpha-btn active" data-letter="ALL">All</button>
+                <div class="alpha-letters-grid">
+                    <button type="button" class="alpha-btn" data-letter="A">A</button>
+                    <button type="button" class="alpha-btn" data-letter="B">B</button>
+                    <button type="button" class="alpha-btn" data-letter="C">C</button>
+                    <button type="button" class="alpha-btn" data-letter="D">D</button>
+                    <button type="button" class="alpha-btn" data-letter="E">E</button>
+                    <button type="button" class="alpha-btn" data-letter="F">F</button>
+                    <button type="button" class="alpha-btn" data-letter="G">G</button>
+                    <button type="button" class="alpha-btn" data-letter="H">H</button>
+                    <button type="button" class="alpha-btn" data-letter="I">I</button>
+                    <button type="button" class="alpha-btn" data-letter="J">J</button>
+                    <button type="button" class="alpha-btn" data-letter="K">K</button>
+                    <button type="button" class="alpha-btn" data-letter="L">L</button>
+                    <button type="button" class="alpha-btn" data-letter="M">M</button>
+                    <button type="button" class="alpha-btn" data-letter="N">N</button>
+                    <button type="button" class="alpha-btn" data-letter="O">O</button>
+                    <button type="button" class="alpha-btn" data-letter="P">P</button>
+                    <button type="button" class="alpha-btn" data-letter="Q">Q</button>
+                    <button type="button" class="alpha-btn" data-letter="R">R</button>
+                    <button type="button" class="alpha-btn" data-letter="S">S</button>
+                    <button type="button" class="alpha-btn" data-letter="T">T</button>
+                    <button type="button" class="alpha-btn" data-letter="U">U</button>
+                    <button type="button" class="alpha-btn" data-letter="V">V</button>
+                    <button type="button" class="alpha-btn" data-letter="W">W</button>
+                    <button type="button" class="alpha-btn" data-letter="X">X</button>
+                    <button type="button" class="alpha-btn" data-letter="Y">Y</button>
+                    <button type="button" class="alpha-btn" data-letter="Z">Z</button>
+                </div>
+            </div>
+
+            <div style="display:flex; justify-content: space-between; align-items: center; gap: 20px; flex-wrap: wrap;">
+                <a href="{% url 'linelist:get_linelist' %}" class="btn-action-sm btn-back" style="order: 0; text-decoration:none; display:inline-flex; align-items:center; justify-content:center;">← Back to Molecules</a>
+                <div style="display:flex; align-items: center; gap: 20px; flex-wrap: wrap; justify-content: center; flex: 1 1 auto;">
+                    <div style="display:flex; flex-direction:column; gap: 10px;">
+                        <div class="form-group mb-0 form-inline" style="justify-content:center;">
+                            <input type="search" id="isoSearchInput" class="form-control mx-sm-3" style="width: 200px;" placeholder="Search by Formula">
+                            <button type="button" id="isoSearchButton" class="btn btn-outline-success btn-custom">Search</button>
+                        </div>
+                    </div>
+                    <div>
+                        <button type="submit" class="btn-submit" id="mainSubmitBtn" onclick="if(document.querySelectorAll('.iso-checkbox:checked').length===0){event.preventDefault();location.reload();}">Submit</button> 
+                    </div>
+                </div>
+                <button type="button" id="clearSelectionBtn" class="btn-action-sm" style="order: 2;">Refresh Selection ↻</button>
+            </div>
+        </div>
+
+        <div class="table-card mx-auto" style="max-width: 1100px;">
+            <div style="text-align: center; margin-bottom: 20px;">
+                <p class="font-weight-bold mb-0" style="font-size: 1.15rem; color:#495057;">
+                    Selected (<span id="selectedCount" style="color:#6fbd8f; font-weight:800;">0</span>)
+                </p>
+                <div id="selectedIsotopologues" class="selected-items-grid" style="justify-content: center;"></div>
+            </div>
+
+        
+            <div class="table-container">
+                <div class="table-responsive table-fixhead table-wrapper-fix">
+                    <table class="table align-middle mx-auto table-custom" id="dataTable">
+                        <thead>
+                            <tr>
+                                <th class="col-divider">MOLECULE</th>
+                                <th>ISOTOPOLOGUE</th>
+                                <th>MASS (Da)</th>
+                                <th><i>T</i><sub>max</sub> (K)</th>
+                                <th>PARTITION FUNCTION</th>
+                                <th>DOWNLOAD CSV</th>
+                                <th class="text-center" style="vertical-align: middle;">
+                                    <label for="select-all" class="d-block mb-1" style="font-size: 0.85rem; cursor:pointer;">SELECT ALL</label>
+                                    <div class="checkbox-wrapper">
+                                        <input id="select-all" type="checkbox" name="select-all" value="select-all"/>
+                                    </div>
+                                </th>
+                            </tr>
+                        </thead>
+
+                    {% regroup isos by molecule as molecule_list %}
+                    {% for molecule in molecule_list %}
+                    <tbody class="molecule-group">
+                    <tr class="iso-row">
+                        <td rowspan="{{ molecule.list|length }}" class="col-divider" style="vertical-align : middle;">
+                            <div style="display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 5px;">
+                                <span class="font-weight-bold" style="font-size: 1.25rem;">{{ molecule.grouper.html|safe }}</span>
                                 {% if molecule.list|length > 1 %}
                                     <input id="{{ molecule.grouper.slug }}-checkbox" class="molecule-checkbox" type="checkbox" name="{{ molecule.grouper.slug }}-checkbox" value="{{ molecule.grouper.slug }}"/>
                                 {% endif %}
-                                {{ molecule.grouper.html|safe }}</td>
-                            {% for iso in molecule.list %}
-                                {% if not forloop.first %} 
-                                    <tr>
+                            </div>
+                        </td>
+                        {% for iso in molecule.list %}
+                            {% if not forloop.first %} 
+                                <tr class="iso-row">
+                            {% endif %}
+                            <td class="iso-html-val" data-slug="{{ iso.slug }}">{{ iso.html|safe }}</td>
+                            <td>{{ iso.mass|stringformat:".3f" }}</td>
+                            <td>{{ iso.tmax }}</td>
+                            <td style="white-space: nowrap;">
+                                <a href="{% url 'linelist:view_pf' iso.pf_file %}" target="_blank">{{ iso.pf_file }}</a>
+                            </td>
+                            <td class="text-center">
+                                {% if iso.data_filename %}
+                                <a href="/db/{{ iso.data_filename }}.csv/" style="color: #4497ef; transition: color 0.2s;" onmouseover="this.style.color='#6fbd8f'" onmouseout="this.style.color='#4497ef'">
+                                    <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" fill="currentColor" class="bi bi-cloud-arrow-down-fill" viewBox="0 0 16 16">
+                                      <path d="M8 2a5.53 5.53 0 0 0-3.594 1.342c-.766.66-1.321 1.52-1.464 2.383C1.266 6.095 0 7.555 0 9.318 0 11.366 1.708 13 3.781 13h8.906C14.502 13 16 11.57 16 9.773c0-1.636-1.242-2.969-2.834-3.194C12.923 3.999 10.69 2 8 2m2.354 6.854-2 2a.5.5 0 0 1-.708 0l-2-2a.5.5 0 1 1 .708-.708L7.5 9.293V5.5a.5.5 0 0 1 1 0v3.793l1.146-1.147a.5.5 0 0 1 .708.708z"/>
+                                    </svg>
+                                </a>
+                                {% else %}
+                                <span style="color: #ced4da; cursor: not-allowed;">
+                                    <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" fill="currentColor" class="bi bi-cloud-arrow-down-fill" viewBox="0 0 16 16">
+                                      <path d="M8 2a5.53 5.53 0 0 0-3.594 1.342c-.766.66-1.321 1.52-1.464 2.383C1.266 6.095 0 7.555 0 9.318 0 11.366 1.708 13 3.781 13h8.906C14.502 13 16 11.57 16 9.773c0-1.636-1.242-2.969-2.834-3.194C12.923 3.999 10.69 2 8 2m2.354 6.854-2 2a.5.5 0 0 1-.708 0l-2-2a.5.5 0 1 1 .708-.708L7.5 9.293V5.5a.5.5 0 0 1 1 0v3.793l1.146-1.147a.5.5 0 0 1 .708.708z"/>
+                                    </svg>
+                                </span>
                                 {% endif %}
-                                <td>{{ iso.html|safe }}</td>
-                                <td>{{ iso.mass|stringformat:".3f" }}</td>
-                                <td>
-                                    <div class="form-check">
-                                        <input class="form-check-input iso-checkbox {{ molecule.grouper.slug }}-checkbox" type="checkbox" name="iso" value="{{ iso.slug }}">
-                                    </div>
-                                </td>               
-                                </tr>
-                            {% endfor %}
+                            </td>
+                            <td class="text-center">
+                                <div class="checkbox-wrapper">
+                                    <input class="iso-checkbox {{ molecule.grouper.slug }}-checkbox" type="checkbox" name="iso" value="{{ iso.slug }}">
+                                </div>
+                            </td>               
+                            </tr>
                         {% endfor %}
-
                     </tbody>
-                </table>
-            </div>
-        </form>
-    </div>  
-</div>
+                    {% endfor %}
+            </table>
+        </div>
+    </div>
+    </form>
+</div>  
+
 
 <script>
     document.addEventListener("DOMContentLoaded", function() {
@@ -67,30 +463,99 @@
         var allSelected = false;
         var moleculeCheckboxes = document.querySelectorAll("input.molecule-checkbox");
         var isoCheckboxes = document.querySelectorAll("input.iso-checkbox");
+        
+        // Add data-index to checkboxes to maintain table order in the selected grid
+        isoCheckboxes.forEach(function(cb, idx) {
+            cb.dataset.index = idx;
+        });
+        
+        var isoSearchInput = document.getElementById("isoSearchInput");
+        var isoSearchButton = document.getElementById("isoSearchButton");
+        var alphaButtons = document.querySelectorAll(".alpha-btn");
+        var tableBody = document.querySelector("#dataTable");
 
+        // Format _p to superscript if needed on cells 
+        var allHtmlCells = tableBody.querySelectorAll(".iso-html-val");
+        allHtmlCells.forEach(function(cell) {
+             if(cell.innerHTML.includes("_p")) {
+                 cell.innerHTML = cell.innerHTML.replace(/_p/g, '<sup>+</sup>');
+             }
+        });
+        
         function selectAll() {
-            moleculeCheckboxes.forEach(function(moleculeCheckbox) {
-                moleculeCheckbox.checked = true;
+            var visibleIsos = tableBody.querySelectorAll("tr:not([style*='display: none']) .iso-checkbox");
+            
+            // Recompute from visible only
+            visibleIsos.forEach(function(isoCheckbox) {
+                if(!isoCheckbox.checked) {
+                    var isotopologueSlug = isoCheckbox.value;
+                    var isoHtml = document.querySelector(`.iso-html-val[data-slug='${isotopologueSlug}']`).innerHTML.trim();
+                    
+                    if (!selectedIsotopologues.some(obj => obj.slug === isotopologueSlug)) {
+                        selectedIsotopologues.push({
+                            slug: isotopologueSlug, 
+                            html: isoHtml,
+                            index: parseInt(isoCheckbox.dataset.index)
+                        });
+                        nisosSelected++;
+                    }
+                    isoCheckbox.checked = true;
+                }
             });
-            selectedIsotopologues = [];
-            isoCheckboxes.forEach(function(isoCheckbox) {
-                var isotopologueName = isoCheckbox.value;
-                selectedIsotopologues.push(isotopologueName);
-                isoCheckbox.checked = true;
-            });
-            selectedIsotopologuesElement.textContent = selectedIsotopologues.join(", ");
-            nisosSelected = nisos;
+            updateMoleculeCheckboxesByRow();
+            updateSelectionDisplay();
         }
+        
         function selectNone() {
-            moleculeCheckboxes.forEach(function(moleculeCheckbox) {
-                moleculeCheckbox.checked = false;
+            var visibleIsos = tableBody.querySelectorAll("tr:not([style*='display: none']) .iso-checkbox");
+            visibleIsos.forEach(function(isoCheckbox) {
+                if(isoCheckbox.checked) {
+                    var isotopologueSlug = isoCheckbox.value;
+                    isoCheckbox.checked = false;
+                    
+                    var index = selectedIsotopologues.findIndex(obj => obj.slug === isotopologueSlug);
+                    if (index !== -1) {
+                        selectedIsotopologues.splice(index, 1);
+                        nisosSelected--;
+                    }
+                }
             });
-            selectedIsotopologues = [];
-            isoCheckboxes.forEach(function(isoCheckbox) {
-                isoCheckbox.checked = false;
+            updateMoleculeCheckboxesByRow();
+            updateSelectionDisplay();
+        }
+        
+        // Refresh clear button
+        var clearSelectionBtn = document.getElementById("clearSelectionBtn");
+        if(clearSelectionBtn) {
+            clearSelectionBtn.addEventListener("click", function() {
+                selectNone();
+                allSelected = false;
+                selectAllCheckBox.checked = false;
             });
-            selectedIsotopologuesElement.textContent = "";
-            nisosSelected = 0;
+        }
+        
+        var selectedCountElement = document.getElementById("selectedCount");
+        
+        function updateSelectionDisplay() {
+            selectedCountElement.textContent = nisosSelected;
+            if (nisosSelected === 0) {
+                selectedIsotopologuesElement.innerHTML = "";
+                selectedIsotopologuesElement.style.display = "block";
+            } else {
+                // sort selection by original table order
+                selectedIsotopologues.sort(function(a, b) {
+                    return a.index - b.index;
+                });
+                
+                selectedIsotopologuesElement.style.display = "grid";
+                selectedIsotopologuesElement.innerHTML = selectedIsotopologues.map(isoObj => `<span>${isoObj.html}</span>`).join("");
+
+                // Measure widest span and set uniform column width
+                var spans = selectedIsotopologuesElement.querySelectorAll('span');
+                var maxW = 0;
+                spans.forEach(function(s) { if (s.offsetWidth > maxW) maxW = s.offsetWidth; });
+                selectedIsotopologuesElement.style.setProperty('--col-width', maxW + 'px');
+            }
         }
 
         var selectAllCheckBox = document.getElementById("select-all");
@@ -136,32 +601,46 @@
 
         function selectIso(isoCheckbox) {
                 isoCheckbox.checked = true;
-                var isotopologueName = isoCheckbox.value;
-                selectedIsotopologues.push(isotopologueName);
-                selectedIsotopologuesElement.textContent = selectedIsotopologues.join(", ");
-                nisosSelected++;
+                var isotopologueSlug = isoCheckbox.value;
+                var isoHtml = document.querySelector(`.iso-html-val[data-slug='${isotopologueSlug}']`).innerHTML.trim();
+                
+                if (!selectedIsotopologues.some(obj => obj.slug === isotopologueSlug)) {
+                    selectedIsotopologues.push({
+                        slug: isotopologueSlug, 
+                        html: isoHtml,
+                        index: parseInt(isoCheckbox.dataset.index)
+                    });
+                    nisosSelected++;
+                }
+                updateSelectionDisplay();
                 updateSelectAllCheckbox();
         }
         function deselectIso(isoCheckbox) {
                 isoCheckbox.checked = false;
-                var isotopologueName = isoCheckbox.value;
-                var index = selectedIsotopologues.indexOf(isotopologueName);
+                var isotopologueSlug = isoCheckbox.value;
+                var index = selectedIsotopologues.findIndex(obj => obj.slug === isotopologueSlug);
                 if (index !== -1) {
                     selectedIsotopologues.splice(index, 1);
-                    selectedIsotopologuesElement.textContent = selectedIsotopologues.join(", ");
+                    nisosSelected--;
                 }
-                nisosSelected--;
+                updateSelectionDisplay();
                 updateSelectAllCheckbox();
         }
 
         function updateSelectAllCheckbox() {
-            if (nisos == nisosSelected) {
-                allSelected = true;
-                selectAllCheckBox.checked = true;
-            } else {
-                allSelected = false;
+            var visibleIsos = tableBody.querySelectorAll("tr:not([style*='display: none']) .iso-checkbox");
+            if (visibleIsos.length === 0) {
                 selectAllCheckBox.checked = false;
+                return;
             }
+            
+            var allChecked = true;
+            visibleIsos.forEach(function(checkbox) {
+                if (!checkbox.checked) {
+                    allChecked = false;
+                }
+            });
+            selectAllCheckBox.checked = allChecked;
         }
         
         document.querySelectorAll(".iso-checkbox").forEach(function(isoCheckbox) {
@@ -177,21 +656,109 @@
 
         });
 
-        function updateMoleculeCheckbox(isoCheckbox) {
+        function updateMoleculeCheckboxesByRow() {
             moleculeCheckboxes.forEach(function(moleculeCheckbox) {
-                if (isoCheckbox.classList.contains(moleculeCheckbox.id)) {
-                    thisMoleculesIsoCheckboxes = document.querySelectorAll("input." + moleculeCheckbox.id);
-                    nisosForThisMolecule = thisMoleculesIsoCheckboxes.length;
-                    var nisosSelectedForThisMolecule = 0;
-                    thisMoleculesIsoCheckboxes.forEach(function(moleculeCheckbox) {
-                        if (moleculeCheckbox.checked) {
-                            nisosSelectedForThisMolecule++;
-                        }
-                    });
-                    moleculeCheckbox.checked = (nisosSelectedForThisMolecule == nisosForThisMolecule);
-                }
+                thisMoleculesIsoCheckboxes = document.querySelectorAll("input." + moleculeCheckbox.id);
+                nisosForThisMolecule = thisMoleculesIsoCheckboxes.length;
+                var nisosSelectedForThisMolecule = 0;
+                thisMoleculesIsoCheckboxes.forEach(function(checkbox) {
+                    if (checkbox.checked) {
+                        nisosSelectedForThisMolecule++;
+                    }
+                });
+                moleculeCheckbox.checked = (nisosSelectedForThisMolecule == nisosForThisMolecule) && nisosForThisMolecule > 0;
             });
         }
+        
+        function updateMoleculeCheckbox(isoCheckbox) {
+             updateMoleculeCheckboxesByRow();
+        }
+        
+        // Search functionality
+        function filterTable() {
+            var searchTxt = isoSearchInput.value.trim().toLowerCase();
+            var activeAlphaBtn = document.querySelector(".alpha-btn.active");
+            var alphaFilter = activeAlphaBtn ? activeAlphaBtn.getAttribute("data-letter") : "ALL";
+
+            var tableRows = tableBody.querySelectorAll("tr.iso-row");
+            var matchFound = false;
+            
+            // Loop sequentially and cache molecule visibility because of rowspan
+            var currentMoleculeMatch = false;
+
+            tableRows.forEach(function(row) {
+                var isMoleculeRow = row.querySelector("td[rowspan]");
+                if(isMoleculeRow) {
+                    var moleculeHtml = isMoleculeRow.innerHTML.trim();
+                    var moleculeText = isMoleculeRow.textContent.trim();
+                    
+                    var isoHtmlCell = row.querySelector(".iso-html-val");
+                    var isoText = isoHtmlCell ? isoHtmlCell.textContent.trim().toLowerCase() : "";
+                    
+                    var combinedTextSearch = moleculeText.toLowerCase() + " " + isoText;
+                    var firstLetter = moleculeText.length > 0 ? moleculeText.charAt(0).toUpperCase() : "";
+                    
+                    var showRow = true;
+                    if (alphaFilter !== "ALL" && firstLetter !== alphaFilter) { showRow = false; }
+                    if (searchTxt !== "" && !combinedTextSearch.includes(searchTxt)) { showRow = false; }
+                    
+                    if (showRow) {
+                        row.style.display = "";
+                        matchFound = true;
+                        currentMoleculeMatch = true;
+                    } else {
+                        row.style.display = "none";
+                        currentMoleculeMatch = false;
+                    }
+                } else {
+                    // Secondary isotopologue entries for the preceding molecule row
+                    if (currentMoleculeMatch) {
+                        row.style.display = "";
+                    } else {
+                        row.style.display = "none";
+                    }
+                }
+            });
+
+            if (searchTxt !== "" && !matchFound) {
+                isoSearchInput.classList.add("is-invalid");
+                isoSearchInput.style.borderColor = "#dc3545";
+            } else {
+                isoSearchInput.classList.remove("is-invalid");
+                isoSearchInput.style.borderColor = "";
+            }
+
+            updateSelectAllCheckbox();
+        }
+
+        alphaButtons.forEach(function(btn) {
+            btn.addEventListener("click", function() {
+                alphaButtons.forEach(b => b.classList.remove("active"));
+                this.classList.add("active");
+                filterTable();
+            });
+        });
+
+        isoSearchButton.addEventListener("click", filterTable);
+        isoSearchInput.addEventListener("input", filterTable);
+
+        // Row hover: highlight hovered row + its molecule rowspan cell
+        var allIsoRows = document.querySelectorAll('#dataTable tbody.molecule-group tr.iso-row');
+        allIsoRows.forEach(function(row) {
+            row.addEventListener('mouseenter', function() {
+                row.classList.add('row-hover');
+                // Find the molecule cell (rowspan td) in this tbody
+                var tbody = row.closest('tbody.molecule-group');
+                var molCell = tbody.querySelector('td.col-divider');
+                if (molCell) molCell.classList.add('mol-cell-hover');
+            });
+            row.addEventListener('mouseleave', function() {
+                row.classList.remove('row-hover');
+                var tbody = row.closest('tbody.molecule-group');
+                var molCell = tbody.querySelector('td.col-divider');
+                if (molCell) molCell.classList.remove('mol-cell-hover');
+            });
+        });
 
     });
 </script>

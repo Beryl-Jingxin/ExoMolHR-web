@@ -1,0 +1,147 @@
+{% extends 'theme/base.html' %}
+
+{% block content %}
+<style>
+  .about-wrap {
+    max-width: 850px;
+    margin: 2.2rem auto 3rem;
+    padding: 0 1rem;
+  }
+
+  .about-card {
+    background: linear-gradient(140deg, rgba(255, 255, 255, 0.94), rgba(245, 248, 251, 0.9));
+    border-radius: 18px;
+    box-shadow: 0 18px 45px rgba(15, 35, 60, 0.12);
+    overflow: hidden;
+  }
+
+  .about-head {
+    padding: 1.5rem 1.8rem;
+    border-bottom: 1px solid rgba(18, 52, 86, 0.1);
+    background: rgba(255, 255, 255, 0.62);
+    text-align: center;
+  }
+
+  .about-title {
+    margin: 0;
+    font-size: 2.2rem;
+    font-weight: 800;
+    color: #15314f;
+    letter-spacing: 0.01em;
+  }
+
+  .about-subtitle {
+    margin: 0.5rem 0 0;
+    font-size: 1.1rem;
+    color: #4a5f75;
+  }
+
+  .about-body {
+    padding: 2rem 1.8rem;
+  }
+
+  .transition-hover {
+    transition: transform 0.3s ease, box-shadow 0.3s ease;
+  }
+
+  .transition-hover:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 18px 45px rgba(15, 35, 60, 0.12) !important;
+  }
+
+  @media (max-width: 768px) {
+    .about-wrap {
+      margin-top: 1.25rem;
+      padding: 0 0.8rem;
+    }
+
+    .about-head,
+    .about-body {
+      padding: 1.2rem;
+    }
+
+    .about-title {
+      font-size: 1.8rem;
+    }
+  }
+</style>
+
+<div class="about-wrap">
+    <div class="about-card">
+        <div class="about-head">
+            <h1 class="about-title">Welcome to ExoMolHR</h1>
+            <p class="about-subtitle">Empirical High-Resolution Molecular Spectrum <br> Database and Calculator</p>
+        </div>
+        <div class="about-body">
+
+            <div class="mb-4">
+                <p class="fs-5 text-dark" style="line-height: 1.8; text-align: justify;">
+                    ExoMolHR is built upon the high-temperature molecular line lists from the
+                    <a href="https://www.exomol.com" target="_blank" class="text-decoration-none fw-semibold"
+                        style="color: #59a1cbff;">ExoMol database</a>.
+                    To provide you with highly accurate spectral lines, we utilize available uncertainties in
+                    recommended ExoMol datasets.
+                    These lines largely rely on empirical energy levels generated through the MARVEL procedure,
+                    systematically applied
+                    to improve the energy and transition data across the ExoMol project.
+                </p>
+            </div>
+
+            <div class="p-4 mb-5 bg-light border-start border-4 border-primary shadow-sm" style="border-radius: 18px;">
+                <p class="mb-0 fs-5 text-dark" style="line-height: 1.8; text-align: justify;">
+                    Our freely accessible platform allows you to generate line positions with calculated
+                    intensities for any user-specified
+                    wavenumber/wavelength range and temperature. You can conveniently plot spectra directly on
+                    our website, download the results as a
+                    <code class="fs-6 px-2 py-1 bg-white rounded shadow-sm">.csv</code> file, or calculate cross
+                    sections using our integrated
+                    <a href="https://pypi.org/project/pyexocross/" target="_blank"
+                        class="text-decoration-none fw-bold" style="color: #60c460ff;">PyExoCross Python
+                        package</a>
+                    or <a href="https://github.com/Beryl-Jingxin/PyExoCross" target="_blank"
+                        class="text-decoration-none fw-bold" style="color: #60c460ff;">PyExoCross Python program</a>.
+                </p>
+            </div>
+
+            <h4 class="text-center fw-bold text-secondary mb-4">Current Database Statistics</h4>
+            <div class="row g-4 text-center mb-5">
+                <div class="col-md-4">
+                    <div class="p-4 shadow-sm h-100 transition-hover"
+                        style="border-radius: 18px; background: #9acda2;">
+                        <div class="display-5 fw-bold text-white mb-2" style="font-size: 2rem;">{{ num_mol }}</div>
+                        <div class="text-uppercase fw-bold text-white"
+                            style="letter-spacing: 1px; font-size: 0.9rem;">Molecules</div>
+                    </div>
+                </div>
+                <div class="col-md-4">
+                    <div class="p-4 shadow-sm h-100 transition-hover"
+                        style="border-radius: 18px; background: #6fbd8f;">
+                        <div class="display-5 fw-bold text-white mb-2" style="font-size: 2rem;">{{ num_iso }}</div>
+                        <div class="text-uppercase fw-bold text-white"
+                            style="letter-spacing: 1px; font-size: 0.9rem;">Isotopologues</div>
+                    </div>
+                </div>
+                <div class="col-md-4">
+                    <div class="p-4 shadow-sm h-100 transition-hover"
+                        style="border-radius: 18px; background: #47a49d;">
+                        <div class="display-5 fw-bold text-white mb-2" style="font-size: 2rem;">{{ total_lines }}</div>
+                        <div class="text-uppercase fw-bold text-white"
+                            style="letter-spacing: 1px; font-size: 0.9rem;">Spectral Lines</div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="text-center mt-4 pt-4 border-top">
+                <p class="text-muted mb-0">
+                    We will continuously expand and update these collections as the main
+                    <a href="https://www.exomol.com" target="_blank"
+                        class="text-muted fw-bold text-decoration-none border-bottom border-secondary"
+                        style="transition: color 0.2s;">ExoMol database</a> evolves.
+                </p>
+            </div>
+
+        </div>
+    </div>
+</div>
+
+{% endblock %}
