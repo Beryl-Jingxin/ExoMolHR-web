@@ -9,18 +9,18 @@
   }
 
   .home-card {
-    background: linear-gradient(140deg, rgba(255, 255, 255, 0.94), rgba(245, 248, 251, 0.9));
-    border-radius: 18px;
-    box-shadow: 0 18px 45px rgba(15, 35, 60, 0.12);
+    background: #ffffff;
+    border: 1px solid #e2e8f0;
+    border-radius: 20px;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.02), 0 10px 25px -5px rgba(0,0,0,0.04);
     overflow: hidden;
     height: 100%;
-    border: none;
   }
 
   .home-head {
     padding: 1.5rem 1.8rem;
-    border-bottom: 1px solid rgba(18, 52, 86, 0.1);
-    background: rgba(255, 255, 255, 0.62);
+    border-bottom: 1px solid #e2e8f0;
+    background: linear-gradient(180deg, #ffffff 0%, #f8fafc 100%);
   }
 
   .home-head-center {
@@ -86,12 +86,12 @@
   .update-item {
     display: flex;
     margin-bottom: 1.2rem;
-    background: rgba(255, 255, 255, 0.85);
+    background: #ffffff;
     border-radius: 16px;
     overflow: hidden;
     transition: transform 0.3s ease, box-shadow 0.3s ease, background 0.3s ease;
-    box-shadow: 0 4px 15px rgba(0,0,0,0.03);
-    border: 1px solid rgba(255,255,255,0.5);
+    box-shadow: 0 1px 3px rgba(0,0,0,0.02);
+    border: 1px solid #e2e8f0;
   }
 
   .update-item:hover {
@@ -155,10 +155,11 @@
   /* Feature items */
   .feature-box {
     padding: 1.5rem;
-    background: rgba(255, 255, 255, 0.6);
+    background: #ffffff;
     border-radius: 16px;
     transition: transform 0.3s ease, box-shadow 0.3s ease, background 0.3s ease;
-    border: 1px solid rgba(255,255,255,0.8);
+    border: 1px solid #e2e8f0;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.02);
     display: flex;
     flex-direction: column;
     align-items: center;
@@ -231,28 +232,28 @@
             </p>
             
             <div class="row g-4 mb-2">
-                <div class="col-md-6">
+                <div class="col-md-6 mb-4">
                     <div class="feature-box h-100">
                         <svg xmlns="http://www.w3.org/2000/svg" width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="mb-3" style="color: #47a49d;"><circle cx="12" cy="12" r="10"></circle><circle cx="12" cy="12" r="6"></circle><circle cx="12" cy="12" r="2"></circle></svg>
                         <div class="feature-title">High Accuracy</div>
                         <p class="feature-desc">Empirical energy levels with rigorous uncertainty quantification ensuring top-tier spectral fidelity.</p>
                     </div>
                 </div>
-                <div class="col-md-6">
+                <div class="col-md-6 mb-4">
                     <div class="feature-box h-100">
                         <svg xmlns="http://www.w3.org/2000/svg" width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="mb-3" style="color: #6fbd8f;"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"></polyline></svg>
                         <div class="feature-title">Dynamic Calculation</div>
                         <p class="feature-desc">Generate spectra on-the-fly for custom wavenumber/wavelength ranges, thermodynamic temperatures, and intensity thresholds.</p>
                     </div>
                 </div>
-                <div class="col-md-6">
+                <div class="col-md-6 mb-4">
                     <div class="feature-box h-100">
                         <svg xmlns="http://www.w3.org/2000/svg" width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="mb-3" style="color: #59c2cbff;"><polyline points="4 14 10 8 15 13 20 5"></polyline><line x1="20" y1="20" x2="4" y2="20"></line><line x1="4" y1="20" x2="4" y2="4"></line></svg>
                         <div class="feature-title">Online Spectrum Plotting</div>
                         <p class="feature-desc">Interactively visualize and plot stick spectra for mixed molecules and isotopologues directly in your browser.</p>
                     </div>
                 </div>
-                <div class="col-md-6">
+                <div class="col-md-6 mb-4">
                     <div class="feature-box h-100">
                         <svg xmlns="http://www.w3.org/2000/svg" width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="mb-3" style="color: #9acda2;"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="7 10 12 15 17 10"></polyline><line x1="12" y1="15" x2="12" y2="3"></line></svg>
                         <div class="feature-title">Seamless Integration</div>

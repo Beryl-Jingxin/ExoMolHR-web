@@ -1,0 +1,326 @@
+{% extends 'theme/base.html' %}
+
+{% block content %}
+<style>
+  .api-container {
+    max-width: 1100px;
+    margin: 3rem auto 3rem;
+    padding: 0 1.5rem;
+  }
+
+  .api-header {
+    margin-bottom: 3rem;
+    text-align: center;   
+  }
+
+  .api-header h1 {
+    font-size: 2.2rem;
+    font-weight: 800;
+    color: #15314f;
+    letter-spacing: 0.01em;
+    margin-bottom: 1.25rem;
+    line-height: 1.1;
+  }
+
+  .api-header p {
+    font-size: 1.1rem;
+    color: #4a5f75;
+    max-width: 850px;
+    margin: 0 auto;
+    line-height: 1.7;
+    font-weight: 400;
+  }
+
+  .api-grid {
+    display: flex;
+    flex-direction: column;
+    gap: 3rem;
+  }
+
+  .api-section {
+    background: #ffffff;
+    border: 1px solid #e2e8f0;
+    border-radius: 20px;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.02), 0 10px 25px -5px rgba(0,0,0,0.04);
+    overflow: hidden;
+    transition: transform 0.4s cubic-bezier(0.16, 1, 0.3, 1), box-shadow 0.4s cubic-bezier(0.16, 1, 0.3, 1), border-color 0.4s ease;
+  }
+
+  .api-section:hover {
+    transform: translateY(-4px);
+    box-shadow: 0 4px 6px rgba(0,0,0,0.02), 0 20px 40px -10px rgba(0,0,0,0.08);
+    border-color: #cbd5e1;
+  }
+
+  .api-section-header {
+    padding: 2.5rem 3rem;
+    background: linear-gradient(180deg, #ffffff 0%, #f8fafc 100%);
+    border-bottom: 1px solid #e2e8f0;
+  }
+
+  .api-section-title {
+    font-size: 1.75rem;
+    font-weight: 700;
+    color: #0f172a;
+    margin: 0 0 0.75rem 0;
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    letter-spacing: -0.02em;
+  }
+
+  .api-section-desc {
+    font-size: 1.1rem;
+    color: #64748b;
+    margin: 0;
+    line-height: 1.6;
+  }
+
+  .api-method-badge {
+    font-family: 'JetBrains Mono', 'Fira Code', Consolas, monospace;
+    font-size: 0.8rem;
+    font-weight: 700;
+    letter-spacing: 0.08em;
+    padding: 0.35rem 0.85rem;
+    border-radius: 8px;
+    text-transform: uppercase;
+  }
+
+  .badge-get {
+    color: #059669;
+    background: rgba(16, 185, 129, 0.1);
+    border: 1px solid rgba(16, 185, 129, 0.2);
+  }
+
+  .badge-link {
+    color: #4f46e5;
+    background: rgba(79, 70, 229, 0.1);
+    border: 1px solid rgba(79, 70, 229, 0.2);
+  }
+
+  .api-code-block {
+    background: #0f172a;
+    padding: 2rem 3rem;
+    color: #e2e8f0;
+    font-family: 'JetBrains Mono', 'Fira Code', Consolas, monospace;
+    font-size: 1rem;
+    overflow-x: auto;
+    position: relative;
+  }
+
+  .api-url {
+    display: block;
+    line-height: 1.6;
+  }
+  
+  .api-code-block.example {
+    background: #1e293b;
+    border-top: 1px solid #334155;
+  }
+
+  .api-code-label {
+    font-family: 'Inter', -apple-system, sans-serif;
+    font-size: 0.75rem;
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+    color: #64748b;
+    margin-bottom: 1rem;
+    display: block;
+    font-weight: 700;
+  }
+
+  /* Syntax Highlighting for URL */
+  .url-base { color: #94a3b8; }
+  .url-path { color: #f8fafc; font-weight: 500; }
+  .url-param { color: #38bdf8; font-weight: 600; }
+  .url-query { color: #a78bfa; }
+  .url-value { color: #e2e8f0; }
+
+  .parameter-hint {
+    background: #f8fafc;
+    padding: 1.5rem 3rem;
+    border-top: 1px solid #e2e8f0;
+    font-size: 1rem;
+    color: #475569;
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+  }
+
+  .parameter-hint code {
+    background: #e2e8f0;
+    color: #0f172a;
+    padding: 0.25rem 0.6rem;
+    border-radius: 6px;
+    font-family: 'JetBrains Mono', 'Fira Code', Consolas, monospace;
+    font-size: 0.9em;
+    font-weight: 500;
+  }
+
+  .example-link {
+    color: #60a5fa;
+    text-decoration: none;
+    transition: color 0.2s, text-shadow 0.2s;
+    display: inline-block;
+  }
+  
+  .example-link:hover {
+    color: #93c5fd;
+    text-shadow: 0 0 12px rgba(96, 165, 250, 0.4);
+  }
+
+  @media (max-width: 768px) {
+    .api-header h1 { font-size: 2.5rem; }
+    .api-container { margin: 2rem auto; }
+    .api-section-header, .api-code-block, .parameter-hint { padding: 1.5rem; }
+    .api-code-block { font-size: 0.85rem; }
+  }
+</style>
+
+<div class="api-container">
+    <div class="api-header">
+        <h1>ExoMolHR API Reference</h1>
+        <p>Explore our API endpoints designed to help you quickly fetch parameters, line lists, and calculated spectra. <br>
+           Programmatically integrate ExoMolHR's expansive molecular data and calculated spectra directly into your next-generation applications. 
+        </p>
+    </div>
+
+    <div class="api-grid">
+        <!-- Master File -->
+        <div class="api-section">
+            <div class="api-section-header">
+                <h2 class="api-section-title">
+                    <span class="api-method-badge badge-get">GET</span>
+                    Master File
+                </h2>
+                <p class="api-section-desc">Fetches the global hierarchical mapping of all available molecules, isotopologues, and their supported datasets in a structured JSON payload.</p>
+            </div>
+            <div class="api-code-block example">
+                <span class="api-code-label">Live URL</span>
+                <a href="https://www.exomol.com/exomolhr/db/exomolhr.all.json" target="_blank" class="example-link">
+                    <span class="url-base">https://www.exomol.com/exomolhr/db/</span><span class="url-path">exomolhr.all.json</span>
+                </a>
+            </div>
+        </div>
+
+        <!-- CSV Line List -->
+        <div class="api-section">
+            <div class="api-section-header">
+                <h2 class="api-section-title">
+                    <span class="api-method-badge badge-get">GET</span>
+                    CSV Line List
+                </h2>
+                <p class="api-section-desc">Retrieves specific datasets structured as CSV line lists, featuring exact intensities pre-calculated at the standard 296 K.</p>
+            </div>
+            <div class="api-code-block">
+                <span class="api-code-label">Endpoint Definition</span>
+                <span class="api-url">
+                    <span class="url-base">https://www.exomol.com/exomolhr/db/</span><span class="url-param">&lt;MOLECULE&gt;</span>__<span class="url-param">&lt;ISO-SLUG&gt;</span>__<span class="url-param">&lt;DATASET&gt;</span>
+                </span>
+            </div>
+            <div class="api-code-block example">
+                <span class="api-code-label">Live Example</span>
+                <a href="https://www.exomol.com/exomolhr/db/AlCl__27Al-35Cl__YNAT" target="_blank" class="example-link">
+                    <span class="url-base">https://www.exomol.com/exomolhr/db/</span><span class="url-path">AlCl__27Al-35Cl__YNAT</span>
+                </a>
+            </div>
+        </div>
+
+        <!-- Partition Function -->
+        <div class="api-section">
+            <div class="api-section-header">
+                <h2 class="api-section-title">
+                    <span class="api-method-badge badge-get">GET</span>
+                    Partition Function
+                </h2>
+                <p class="api-section-desc">Acquire the partition function parameter text file for the specified isotopologue and dataset.</p>
+            </div>
+            <div class="api-code-block">
+                <span class="api-code-label">Endpoint Definition</span>
+                <span class="api-url">
+                    <span class="url-base">https://www.exomol.com/exomolhr/pf/</span><span class="url-param">&lt;ISO-SLUG&gt;</span>__<span class="url-param">&lt;DATASET&gt;</span><span class="url-base">.pf</span>
+                </span>
+            </div>
+            <div class="api-code-block example">
+                <span class="api-code-label">Live Example</span>
+                <a href="https://www.exomol.com/exomolhr/pf/27Al-35Cl__YNAT.pf" target="_blank" class="example-link">
+                    <span class="url-base">https://www.exomol.com/exomolhr/pf/</span><span class="url-path">27Al-35Cl__YNAT.pf</span>
+                </a>
+            </div>
+        </div>
+
+        <!-- Filters Page Initialization -->
+        <div class="api-section">
+            <div class="api-section-header">
+                <h2 class="api-section-title">
+                    <span class="api-method-badge badge-link">LINK</span>
+                    Filters Initialization
+                </h2>
+                <p class="api-section-desc">Construct a deep link into the Spectrum Filters UI, automatically pre-loading specific isotopologues for batch processing.</p>
+            </div>
+            <div class="parameter-hint">
+                <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" fill="currentColor" viewBox="0 0 16 16" style="color: #64748b; margin-top: 2px;">
+                    <path d="M8 15A7 7 0 1 1 8 1a7 7 0 0 1 0 14zm0 1A8 8 0 1 0 8 0a8 8 0 0 0 0 16z"/>
+                    <path d="m8.93 6.588-2.29.287-.082.38.45.083c.294.07.352.176.288.469l-.738 3.468c-.194.897.105 1.319.808 1.319.545 0 1.178-.252 1.465-.598l.088-.416c-.2.176-.492.246-.686.246-.275 0-.375-.193-.304-.533L8.93 6.588zM9 4.5a1 1 0 1 1-2 0 1 1 0 0 1 2 0z"/>
+                </svg>
+                <span><strong>Encoding Note:</strong> The <code>+</code> character used to denote ions must be correctly URL-encoded as <code>_p</code>.</span>
+            </div>
+            <div class="api-code-block">
+                <span class="api-code-label">Endpoint Definition</span>
+                <span class="api-url">
+                    <span class="url-base">https://www.exomol.com/exomolhr/db/</span><span class="url-query">?iso=</span><span class="url-param">&lt;ISO-SLUG1&gt;</span><span class="url-query">&amp;iso=</span><span class="url-param">&lt;ISO-SLUG2&gt;</span>
+                </span>
+            </div>
+            <div class="api-code-block example">
+                <span class="api-code-label">Live Example</span>
+                <a href="https://www.exomol.com/exomolhr/db/?iso=27Al-35Cl&iso=1H2-2H_p&iso=2H3_p" target="_blank" class="example-link">
+                    <span class="url-base">https://www.exomol.com/exomolhr/db/</span><span class="url-query">?iso=</span><span class="url-value">27Al-35Cl</span><span class="url-query">&amp;iso=</span><span class="url-value">1H2-2H_p</span><span class="url-query">&amp;iso=</span><span class="url-value">2H3_p</span>
+                </a>
+            </div>
+        </div>
+
+        <!-- Spectrum Viewer Integration -->
+        <div class="api-section">
+            <div class="api-section-header">
+                <h2 class="api-section-title">
+                    <span class="api-method-badge badge-link">LINK</span>
+                    Spectrum Viewer Integration
+                </h2>
+                <p class="api-section-desc">Generate fully parameterized deep links that launch the calculated spectrum viewer, supporting parameterization for temperature, intensity threshold, and custom wavenumber or wavelength ranges.</p>
+            </div>
+            
+            <div class="parameter-hint" style="background: #ffffff; border-bottom: 1px solid #334155; border-top: none;">
+                <span style="color: #0f172a; font-weight: 600;">Wavenumber (cm<sup>-1</sup>)</span>
+            </div>
+            <div class="api-code-block">
+                <span class="api-code-label">Endpoint Definition</span>
+                <span class="api-url">
+                    <span class="url-base">https://www.exomol.com/exomolhr/get-data/</span><span class="url-query">?iso=</span><span class="url-param">&lt;ISO&gt;</span><span class="url-query">&amp;numin=</span><span class="url-param">&lt;MIN&gt;</span><span class="url-query">&amp;numax=</span><span class="url-param">&lt;MAX&gt;</span><span class="url-query">&amp;T=</span><span class="url-param">&lt;TEMP&gt;</span><span class="url-query">&amp;Smin=</span><span class="url-param">&lt;INTENS&gt;</span>
+                </span>
+            </div>
+            <div class="api-code-block example">
+                <span class="api-code-label">Live Example • Target T = 296 K</span>
+                <a href="https://www.exomol.com/exomolhr/get-data/?iso=27Al-35Cl&iso=1H2-2H_p&iso=2H3_p&numin=100&numax=1000&T=296&Smin=1e-35" target="_blank" class="example-link">
+                    <span class="url-base">https://www.exomol.com/exomolhr/get-data/</span><span class="url-query">?iso=</span><span class="url-value">27Al-35Cl</span><span class="url-query">&amp;iso=</span><span class="url-value">1H2-2H_p</span><span class="url-query">&amp;iso=</span><span class="url-value">2H3_p</span><span class="url-query">&amp;numin=</span><span class="url-value">100</span><span class="url-query">&amp;numax=</span><span class="url-value">1000</span><span class="url-query">&amp;T=</span><span class="url-value">296</span><span class="url-query">&amp;Smin=</span><span class="url-value">1e-35</span>
+                </a>
+            </div>
+
+            <div class="parameter-hint" style="background: #ffffff; border-bottom: 1px solid #334155;">
+                <span style="color: #0f172a; font-weight: 600;">Wavelength (nm)</span>
+            </div>
+            <div class="api-code-block">
+                <span class="api-code-label">Endpoint Definition</span>
+                <span class="api-url">
+                    <span class="url-base">https://www.exomol.com/exomolhr/get-data/</span><span class="url-query">?iso=</span><span class="url-param">&lt;ISO&gt;</span><span class="url-query">&amp;wvmin=</span><span class="url-param">&lt;MIN&gt;</span><span class="url-query">&amp;wvmax=</span><span class="url-param">&lt;MAX&gt;</span><span class="url-query">&amp;T=</span><span class="url-param">&lt;TEMP&gt;</span><span class="url-query">&amp;Smin=</span><span class="url-param">&lt;INTENS&gt;</span>
+                </span>
+            </div>
+            <div class="api-code-block example">
+                <span class="api-code-label">Live Example • Target T = 1000 K</span>
+                <a href="https://www.exomol.com/exomolhr/get-data/?iso=27Al-35Cl&iso=1H2-2H_p&iso=2H3_p&wvmin=1000&wvmax=5000&T=1000&Smin=1e-30" target="_blank" class="example-link">
+                    <span class="url-base">https://www.exomol.com/exomolhr/get-data/</span><span class="url-query">?iso=</span><span class="url-value">27Al-35Cl</span><span class="url-query">&amp;iso=</span><span class="url-value">1H2-2H_p</span><span class="url-query">&amp;iso=</span><span class="url-value">2H3_p</span><span class="url-query">&amp;wvmin=</span><span class="url-value">1000</span><span class="url-query">&amp;wvmax=</span><span class="url-value">5000</span><span class="url-query">&amp;T=</span><span class="url-value">1000</span><span class="url-query">&amp;Smin=</span><span class="url-value">1e-30</span>
+                </a>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

@@ -71,6 +71,11 @@
                 href="{% url 'linelist:about' %}">About</a>
             </li>
             <li class="nav-item">
+                <a class="nav-link {% if request.resolver_match.url_name == 'api' %}active{% endif %}"
+                {% if request.resolver_match.url_name == 'api' %}aria-current="true"{% endif %}
+                href="{% url 'linelist:api' %}">API</a>
+            </li>            
+            <li class="nav-item">
                 <a class="nav-link {% if request.resolver_match.url_name == 'citation' %}active{% endif %}"
                 {% if request.resolver_match.url_name == 'citation' %}aria-current="true"{% endif %}
                 href="{% url 'linelist:citation' %}">Citation</a>

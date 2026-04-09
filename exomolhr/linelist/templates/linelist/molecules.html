@@ -118,14 +118,39 @@
     .table-container {
         padding: 0;
     }
-    .table-wrapper-fix {
+    .table-box {
         border-radius: 15px;
         border: 2px solid #8bbd65;
         background: rgba(255, 255, 255, 0.8);
         box-shadow: 0 4px 6px rgba(0,0,0,0.05);
-        overflow-x: auto;
-        overflow-y: auto;
-        max-height: 550px;
+        overflow: hidden;
+    }
+    
+    .table-scroll-head {
+        background: #8bbd65;
+        border-bottom: 2px solid rgba(0,0,0,0.05);
+        padding-right: 9px; /* Compensate for the body scrollbar */
+    }
+    
+    .table-scroll-body {
+        max-height: 520px;
+        overflow-y: scroll;
+        /* native scrollbar styling */
+        scrollbar-width: thin;
+        scrollbar-color: rgba(139, 189, 101, 0.9) transparent;
+    }
+
+    .table-scroll-body::-webkit-scrollbar {
+        width: 9px;
+        height: 8px;
+    }
+    .table-scroll-body::-webkit-scrollbar-thumb {
+        background: #8bbd65;
+        border-radius: 999px;
+    }
+    .table-scroll-body::-webkit-scrollbar-track {
+        background: rgba(255, 255, 255, 0.98);
+        border-left: 1px solid rgba(139, 189, 101, 0.16);
     }
     
     .table-custom {
@@ -134,7 +159,7 @@
         font-size: 1.1rem;
         width: 100%;
         min-width: 900px;
-        margin: 0 auto;
+        margin: 0; /* Remove default bootstrap margin */
         border-collapse: separate;
         border-spacing: 0;
     }
@@ -145,9 +170,6 @@
         color: white;
         letter-spacing: 1px;
         padding: 20px 15px;
-        position: sticky;
-        top: 0;
-        z-index: 10;
         text-align: center;
         vertical-align: middle;
     }
@@ -367,37 +389,54 @@
             </div>
 
             <div class="table-container">
-                <div class="table-responsive table-fixhead table-wrapper-fix">
-                    <table class="table align-middle mx-auto table-custom" id="dataTable">
-                        <thead>
-                            <tr>
-                                <th class="col-divider">MOLECULE</th>
-                                <th>MOLECULE NAME</th>
-                                <th>MASS (Da)</th>
-                                <th class="text-center" style="vertical-align: middle;">
-                                    <label for="select-all" class="d-block mb-1" style="font-size: 0.85rem; cursor:pointer;">SELECT ALL</label>
-                                    <div class="checkbox-wrapper">
-                                        <input id="select-all" type="checkbox" name="select-all" value="select-all"/>
-                                    </div>
-                                </th>
-                            </tr>
-                        </thead>
-
-                        <tbody>
-                            {% for molecule in molecules %}
-                            <tr>
-                                <td class="font-weight-bold col-divider" style="font-size: 1.25rem;">{{ molecule.html|safe }}</td>
-                                <td>{{ molecule.names }}</td>  
-                                <td class="text-muted font-weight-bold">{{ molecule.mass|stringformat:".3f" }}</td>
-                                <td class="text-center" style="vertical-align: middle;">
-                                    <div class="checkbox-wrapper">
-                                        <input class="molecule-checkbox" type="checkbox" name="molecule" value="{{ molecule.slug }}">
-                                    </div>
-                                </td>               
-                            </tr>
-                            {% endfor %}
-                        </tbody>
-                    </table>
+                <div class="table-box">
+                    <div class="table-scroll-head">
+                        <table class="table align-middle mx-auto table-custom m-0" style="table-layout: fixed; border-collapse: collapse;">
+                            <colgroup>
+                                <col style="width: 17%;">
+                                <col style="width: 48%;">
+                                <col style="width: 20%;">
+                                <col style="width: 15%;">
+                            </colgroup>
+                            <thead>
+                                <tr>
+                                    <th class="col-divider" style="background: #8bbd65; border:none; border-right: 2px solid rgba(255,255,255,0.4);">MOLECULE</th>
+                                    <th style="background: #8bbd65; border:none;">MOLECULE NAME</th>
+                                    <th style="background: #8bbd65; border:none;">MASS (Da)</th>
+                                    <th class="text-center" style="vertical-align: middle; background: #8bbd65; border:none;">
+                                        <label for="select-all" class="d-block mb-1" style="font-size: 0.85rem; cursor:pointer;">SELECT ALL</label>
+                                        <div class="checkbox-wrapper">
+                                            <input id="select-all" type="checkbox" name="select-all" value="select-all"/>
+                                        </div>
+                                    </th>
+                                </tr>
+                            </thead>
+                        </table>
+                    </div>
+                    <div class="table-scroll-body">
+                        <table class="table align-middle mx-auto table-custom m-0" id="dataTable" style="table-layout: fixed; border-collapse: collapse;">
+                            <colgroup>
+                                <col style="width: 17%;">
+                                <col style="width: 48%;">
+                                <col style="width: 20%;">
+                                <col style="width: 15%;">
+                            </colgroup>
+                            <tbody>
+                                {% for molecule in molecules %}
+                                <tr>
+                                    <td class="font-weight-bold col-divider" style="font-size: 1.25rem;">{{ molecule.html|safe }}</td>
+                                    <td>{{ molecule.names }}</td>  
+                                    <td class="text-muted font-weight-bold">{{ molecule.mass|stringformat:".3f" }}</td>
+                                    <td class="text-center" style="vertical-align: middle;">
+                                        <div class="checkbox-wrapper">
+                                            <input class="molecule-checkbox" type="checkbox" name="molecule" value="{{ molecule.slug }}">
+                                        </div>
+                                    </td>               
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
                 </div>
             </div>
         </div>

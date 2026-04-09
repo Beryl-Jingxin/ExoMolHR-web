@@ -158,6 +158,10 @@ def about(request):
     return render(request, "linelist/about.html", context)
 
 
+def api(request):
+    return render(request, "linelist/api.html")
+
+
 def citation(request):
     return render(request, "linelist/citation.html")
 
