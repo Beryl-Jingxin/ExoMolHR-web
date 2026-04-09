@@ -144,6 +144,7 @@
     color: #475569;
     display: flex;
     align-items: center;
+    justify-content: center;
     gap: 0.75rem;
   }
 
@@ -193,7 +194,7 @@
                     <span class="api-method-badge badge-get">GET</span>
                     Master File
                 </h2>
-                <p class="api-section-desc">Fetches the global hierarchical mapping of all available molecules, isotopologues, and their supported datasets in a structured JSON payload.</p>
+                <p class="api-section-desc">Fetches the global hierarchical mapping of all available molecules, isotopologues, and their supported datasets in a structured JSON payload</p>
             </div>
             <div class="api-code-block example">
                 <span class="api-code-label">Live URL</span>
@@ -203,25 +204,25 @@
             </div>
         </div>
 
-        <!-- CSV Line List -->
+        <!-- Line List at 296 K -->
         <div class="api-section">
             <div class="api-section-header">
                 <h2 class="api-section-title">
                     <span class="api-method-badge badge-get">GET</span>
-                    CSV Line List
+                    Line List at 296 K
                 </h2>
-                <p class="api-section-desc">Retrieves specific datasets structured as CSV line lists, featuring exact intensities pre-calculated at the standard 296 K.</p>
+                <p class="api-section-desc">Retrieves specific datasets structured as CSV line lists, featuring exact intensities pre-calculated at the standard 296 K</p>
             </div>
             <div class="api-code-block">
                 <span class="api-code-label">Endpoint Definition</span>
                 <span class="api-url">
-                    <span class="url-base">https://www.exomol.com/exomolhr/db/</span><span class="url-param">&lt;MOLECULE&gt;</span>__<span class="url-param">&lt;ISO-SLUG&gt;</span>__<span class="url-param">&lt;DATASET&gt;</span>
+                    <span class="url-base">https://www.exomol.com/exomolhr/db/</span><span class="url-param">&lt;MOLECULE&gt;</span>__<span class="url-param">&lt;ISO-SLUG&gt;</span>__<span class="url-param">&lt;DATASET&gt;</span><span class="url-base">.csv</span>
                 </span>
             </div>
             <div class="api-code-block example">
                 <span class="api-code-label">Live Example</span>
                 <a href="https://www.exomol.com/exomolhr/db/AlCl__27Al-35Cl__YNAT" target="_blank" class="example-link">
-                    <span class="url-base">https://www.exomol.com/exomolhr/db/</span><span class="url-path">AlCl__27Al-35Cl__YNAT</span>
+                    <span class="url-base">https://www.exomol.com/exomolhr/db/</span><span class="url-path">AlCl__27Al-35Cl__YNAT.csv</span>
                 </a>
             </div>
         </div>
@@ -233,7 +234,7 @@
                     <span class="api-method-badge badge-get">GET</span>
                     Partition Function
                 </h2>
-                <p class="api-section-desc">Acquire the partition function parameter text file for the specified isotopologue and dataset.</p>
+                <p class="api-section-desc">Acquire the partition function parameter text file for the specified isotopologue and dataset</p>
             </div>
             <div class="api-code-block">
                 <span class="api-code-label">Endpoint Definition</span>
@@ -256,14 +257,14 @@
                     <span class="api-method-badge badge-link">LINK</span>
                     Filters Initialization
                 </h2>
-                <p class="api-section-desc">Construct a deep link into the Spectrum Filters UI, automatically pre-loading specific isotopologues for batch processing.</p>
+                <p class="api-section-desc">Construct a deep link into the Spectrum Filters UI, automatically pre-loading specific isotopologues for batch processing</p>
             </div>
             <div class="parameter-hint">
                 <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" fill="currentColor" viewBox="0 0 16 16" style="color: #64748b; margin-top: 2px;">
                     <path d="M8 15A7 7 0 1 1 8 1a7 7 0 0 1 0 14zm0 1A8 8 0 1 0 8 0a8 8 0 0 0 0 16z"/>
                     <path d="m8.93 6.588-2.29.287-.082.38.45.083c.294.07.352.176.288.469l-.738 3.468c-.194.897.105 1.319.808 1.319.545 0 1.178-.252 1.465-.598l.088-.416c-.2.176-.492.246-.686.246-.275 0-.375-.193-.304-.533L8.93 6.588zM9 4.5a1 1 0 1 1-2 0 1 1 0 0 1 2 0z"/>
                 </svg>
-                <span><strong>Encoding Note:</strong> The <code>+</code> character used to denote ions must be correctly URL-encoded as <code>_p</code>.</span>
+                <span><strong>Encoding Note:</strong> The <code>+</code> character used to denote ions must be correctly URL-encoded as <code>_p</code></span>
             </div>
             <div class="api-code-block">
                 <span class="api-code-label">Endpoint Definition</span>
@@ -286,7 +287,7 @@
                     <span class="api-method-badge badge-link">LINK</span>
                     Spectrum Viewer Integration
                 </h2>
-                <p class="api-section-desc">Generate fully parameterized deep links that launch the calculated spectrum viewer, supporting parameterization for temperature, intensity threshold, and custom wavenumber or wavelength ranges.</p>
+                <p class="api-section-desc">Generate fully parameterized deep links that launch the calculated spectrum viewer, supporting parameterization for temperature, intensity threshold, and custom wavenumber or wavelength ranges</p>
             </div>
             
             <div class="parameter-hint" style="background: #ffffff; border-bottom: 1px solid #334155; border-top: none;">
