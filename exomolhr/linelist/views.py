@@ -288,7 +288,7 @@ def get_data(request):
     T = float(request.GET.get("T"))
     Smin = request.GET.get("Smin")
     if not Smin:
-        Smin = 0
+        Smin = 1e-30
     Smin = float(Smin)
     iso_slugs = request.GET.getlist("iso")
     isos = Isotopologue.objects.filter(slug__in=iso_slugs)
