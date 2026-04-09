@@ -219,11 +219,29 @@
                         <div style="font-size: 0.85rem; font-weight:700; color:#6c757d; text-transform:uppercase; letter-spacing:1px; margin-bottom:8px;">Calculation Constraints</div>
                         <div class="stats-text" style="background: rgba(255,255,255,0.6); padding: 15px; border-radius: 12px; border: 1px solid rgba(255,255,255,0.8);">
                             <div style="display:flex; justify-content:space-between; margin-bottom: 8px; border-bottom: 1px dashed #dee2e6; padding-bottom: 8px;">
-                                <span>Total computed lines :</span>
-                                <span class="stats-highlight">{{ nlines }}</span>
+                                <span>Temperature <i>T</i></span>
+                                <span><strong style="color:#2c3e50;">{{ T }}</strong> <span style="font-size:0.8rem;">K</span></span>
+                            </div>                            
+                            <div style="display:flex; justify-content:space-between; margin-bottom: 8px;">
+                                {% if select_by_wavelength %}
+                                <span>Min wavelength</span>
+                                <span><strong style="color:#2c3e50;">{{ wvmin }}</strong> <span style="font-size:0.8rem;">nm</span></span>
+                                {% else %}
+                                <span>Min wavenumber</span>
+                                <span><strong style="color:#2c3e50;">{{ numin }}</strong> <span style="font-size:0.8rem;">cm<sup>-1</sup></span></span>
+                                {% endif %}
                             </div>
+                            <div style="display:flex; justify-content:space-between; margin-bottom: 8px; border-bottom: 1px dashed #dee2e6; padding-bottom: 8px;">
+                                {% if select_by_wavelength %}
+                                <span>Max wavelength</span>
+                                <span><strong style="color:#2c3e50;">{{ wvmax }}</strong> <span style="font-size:0.8rem;">nm</span></span>
+                                {% else %}
+                                <span>Max wavenumber</span>
+                                <span><strong style="color:#2c3e50;">{{ numax }}</strong> <span style="font-size:0.8rem;">cm<sup>-1</sup></span></span>
+                                {% endif %}
+                            </div>                      
                             <div style="display:flex; justify-content:space-between; align-items:flex-end;">
-                                <span>Threshold <i>S</i><sub>min</sub> :</span>
+                                <span>Threshold <i>S</i><sub>min</sub></span>
                                 <span><strong style="color:#2c3e50;">{{ Smin|stringformat:".2g" }}</strong> <span style="font-size:0.8rem;">cm<sup>-1</sup>/(molecule·cm<sup>-2</sup>)</span></span>
                             </div>
                         </div>
@@ -232,6 +250,10 @@
             </div>
 
             <div class="download-action" style="margin-left: 20px;">
+                <div style="text-align: center; margin-bottom: 20px; width: 100%; border-bottom: 1px dashed #e9ecef; padding-bottom: 20px;">
+                    <div style="font-size: 0.85rem; font-weight:700; color:#6c757d; text-transform:uppercase; letter-spacing:1px; margin-bottom:8px;">Total Lines Computed</div>
+                    <div class="stats-highlight" style="font-size: 2.2rem; line-height: 1;">{{ nlines }}</div>
+                </div>
                 <div style="font-size: 0.85rem; font-weight:700; color:#6c757d; text-transform:uppercase; letter-spacing:1px; margin-bottom:15px;">Export Data</div>
                 <a href="{% url 'linelist:download_archive' %}?archive_name={{ archive_name }}" class="btn-download">
                     Download ZIP

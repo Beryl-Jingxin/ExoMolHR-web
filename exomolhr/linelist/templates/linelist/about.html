@@ -4,22 +4,22 @@
 <style>
   .about-wrap {
     max-width: 850px;
-    margin: 2.2rem auto 3rem;
+    margin: 3rem auto 3rem;
     padding: 0 1rem;
+    gap: 3rem;
   }
 
   .about-card {
-    background: linear-gradient(140deg, rgba(255, 255, 255, 0.94), rgba(245, 248, 251, 0.9));
-    border-radius: 18px;
-    box-shadow: 0 18px 45px rgba(15, 35, 60, 0.12);
+    background: #ffffff;
+    border: 1px solid #e2e8f0;
+    border-radius: 20px;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.02), 0 10px 25px -5px rgba(0,0,0,0.04);
     overflow: hidden;
   }
 
-  .about-head {
-    padding: 1.5rem 1.8rem;
-    border-bottom: 1px solid rgba(18, 52, 86, 0.1);
-    background: rgba(255, 255, 255, 0.62);
+  .about-header {
     text-align: center;
+    margin-bottom: 3rem;
   }
 
   .about-title {
@@ -28,15 +28,19 @@
     font-weight: 800;
     color: #15314f;
     letter-spacing: 0.01em;
+    margin-bottom: 1.25rem;
   }
 
   .about-subtitle {
-    margin: 0.5rem 0 0;
+    margin: 0 auto;
     font-size: 1.1rem;
     color: #4a5f75;
+    line-height: 1.7;
+    font-weight: 400;
   }
 
   .about-body {
+    gap: 3rem;
     padding: 2rem 1.8rem;
   }
 
@@ -67,13 +71,13 @@
 </style>
 
 <div class="about-wrap">
-    <div class="about-card">
-        <div class="about-head">
-            <h1 class="about-title">Welcome to ExoMolHR</h1>
-            <p class="about-subtitle">Empirical High-Resolution Molecular Spectrum <br> Database and Calculator</p>
-        </div>
-        <div class="about-body">
+    <div class="about-header">
+      <h1 class="about-title">Welcome to ExoMolHR</h1>
+      <p class="about-subtitle">Empirical High-Resolution Molecular Spectrum <br> Database and Calculator</p>
+    </div>
 
+    <div class="about-card">
+        <div class="about-body">
             <div class="mb-4">
                 <p class="fs-5 text-dark" style="line-height: 1.8; text-align: justify;">
                     ExoMolHR is built upon the high-temperature molecular line lists from the

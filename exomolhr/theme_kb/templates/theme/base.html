@@ -29,7 +29,7 @@
 
 <div class="card text-center border-0 bg-transparent" style="min-height: 100vh; display: flex; flex-direction: column;">
 
-    <div class="card mb-3 card-img-center">
+    <div class="mb-3">
         <div id="banner" style="background-image: url('{% static "theme/img/banner.jpeg" %}')">
             <h1 class="card-text" id="banner-title">ExoMolHR</h1>
             <h2 class="card-text" id="banner-subtitle">ExoMol High Resolution Database</h2>
@@ -70,6 +70,11 @@
                 {% if request.resolver_match.url_name == 'about' %}aria-current="true"{% endif %}
                 href="{% url 'linelist:about' %}">About</a>
             </li>
+            <li class="nav-item">
+                <a class="nav-link {% if request.resolver_match.url_name == 'api' %}active{% endif %}"
+                {% if request.resolver_match.url_name == 'api' %}aria-current="true"{% endif %}
+                href="{% url 'linelist:api' %}">API</a>
+            </li>            
             <li class="nav-item">
                 <a class="nav-link {% if request.resolver_match.url_name == 'citation' %}active{% endif %}"
                 {% if request.resolver_match.url_name == 'citation' %}aria-current="true"{% endif %}
