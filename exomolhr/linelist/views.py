@@ -748,10 +748,16 @@ def process_iso_worker(iso_slug, ll_name, Q, numin, numax, T, Smin, filestem, re
             / Q
             * abundance
         )
-        df.insert(3, "S", S_vals)
+        if "S" in df.columns:
+            df["S"] = S_vals
+        else:
+            df.insert(1, "S", S_vals)
         df = df[df["S"] >= Smin]
     else:
-        df.insert(3, "S", [])
+        if "S" in df.columns:
+            df["S"] = []
+        else:
+            df.insert(1, "S", [])
 
     output_filename = f"{filestem}__{iso_slug}__{int(T)}K.csv"
     df.to_csv(os.path.join(results_dir, output_filename), index=False)
