@@ -9,6 +9,7 @@
 __pycache__
 .DS_Store
 .coverage
+.git
 local_settings.py
 geckodriver.log
 .sass-cache
