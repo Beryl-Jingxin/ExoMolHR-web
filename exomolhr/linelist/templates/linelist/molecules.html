@@ -4,7 +4,7 @@
 
 <div class="card-body">
     <h3 class="card-title" style="font-weight:700; color:#333;">Molecules</h3>
-    <span style="display:inline-block; background: linear-gradient(135deg, #4497ef, #72b6c5); color: white; font-size: 0.8rem; font-weight: 700; padding: 4px 10px; border-radius: 20px; letter-spacing: 1px; text-transform: uppercase; margin-top: 6px; margin-bottom: 6px;">Step 1</span>
+    <span style="display:inline-block; background: linear-gradient(135deg, #addb8edb, #83b0e1); color: white; font-size: 0.8rem; font-weight: 700; padding: 4px 10px; border-radius: 20px; letter-spacing: 1px; text-transform: uppercase; margin-top: 6px; margin-bottom: 6px;">Step 1</span>
     <p class="card-text text-muted" style="font-size: 1.1rem; margin-top: 8px;">Select molecules</p>
 </div>
 
@@ -71,7 +71,7 @@
         height: 96px; /* explicitly fits 2 rows of letters + gap */
     }
     .alpha-btn-all:hover, .alpha-btn-all.active {
-        background: #4497efff;
+        background: #4497ef;
         color: white;
         transform: scale(1.05);
         box-shadow: 0 8px 20px rgba(0,123,255,0.4);
@@ -104,11 +104,11 @@
     .alpha-btn:hover {
         transform: translateY(-4px) scale(1.1);
         background: #f8f9fa;
-        color: #4497efff;
+        color: #4497ef;
         box-shadow: 0 8px 15px rgba(0,0,0,0.1);
     }
     .alpha-btn.active {
-        background: #4497efff;
+        background: #4497ef;
         color: white;
         transform: translateY(-2px) scale(1.1);
         box-shadow: 0 8px 15px rgba(0,123,255,0.3);
@@ -120,15 +120,15 @@
     }
     .table-box {
         border-radius: 15px;
-        border: 2px solid #8bbd65;
+        border: 2px solid #addb8edb;
         background: rgba(255, 255, 255, 0.8);
         box-shadow: 0 4px 6px rgba(0,0,0,0.05);
         overflow: hidden;
     }
     
     .table-scroll-head {
-        background: #8bbd65;
-        border-bottom: 2px solid rgba(0,0,0,0.05);
+        background: linear-gradient(135deg, #addb8edb, #83b0e1);
+        border-bottom: none;
         padding-right: 9px; /* Compensate for the body scrollbar */
     }
     
@@ -137,7 +137,7 @@
         overflow-y: scroll;
         /* native scrollbar styling */
         scrollbar-width: thin;
-        scrollbar-color: rgba(139, 189, 101, 0.9) transparent;
+        scrollbar-color: rgba(173, 219, 142, 0.95) transparent;
     }
 
     .table-scroll-body::-webkit-scrollbar {
@@ -145,12 +145,12 @@
         height: 8px;
     }
     .table-scroll-body::-webkit-scrollbar-thumb {
-        background: #8bbd65;
+        background: linear-gradient(135deg, #addb8edb, #83b0e1);
         border-radius: 999px;
     }
     .table-scroll-body::-webkit-scrollbar-track {
         background: rgba(255, 255, 255, 0.98);
-        border-left: 1px solid rgba(139, 189, 101, 0.16);
+        border-left: 1px solid rgba(173, 219, 142, 0.16);
     }
     
     .table-custom {
@@ -164,8 +164,8 @@
         border-spacing: 0;
     }
     .table-custom thead th {
-        border-bottom: 2px solid rgba(0,0,0,0.05);
-        background: #8bbd65;
+        border: none !important;
+        background: linear-gradient(135deg, #addb8edb, #83b0e1);
         font-weight: 800;
         color: white;
         letter-spacing: 1px;
@@ -173,20 +173,26 @@
         text-align: center;
         vertical-align: middle;
     }
+
+    .table-custom th,
+    .table-custom td,
+    .table-custom tr {
+        border: none !important;
+    }
     
     .table-custom thead th.col-divider {
-        border-right: 2px solid rgba(255,255,255,0.4);
+        border-right: none !important;
     }
     
     .table-custom tbody td {
         padding: 15px;
         vertical-align: middle;
         text-align: center;
-        border-bottom: 1px solid rgba(0,0,0,0.03);
+        border: none !important;
     }
     
     .table-custom tbody td.col-divider {
-        border-right: 2px solid rgba(0,0,0,0.1);
+        border-right: none !important;
     }
     
     .table-custom tbody tr:last-child td {
@@ -209,7 +215,7 @@
     .table-custom tbody tr:nth-child(n+6) { opacity: 1; animation: none; }
 
     .table-custom tbody tr:hover {
-        background-color: #afdae4c6 !important;
+        background-color: rgba(187, 214, 244, 0.3) !important;
     }
 
     /* Checkbox Fix */
@@ -235,8 +241,8 @@
         vertical-align: middle;
     }
     .molecule-checkbox:checked, #select-all:checked {
-        background-color: #6fbd8f;
-        border-color: #6fbd8f;
+        background-color: #addb8edb;
+        border-color: #addb8edb;
     }
     .molecule-checkbox:checked::after, #select-all:checked::after {
         content: '';
@@ -251,7 +257,7 @@
     }
     
     .btn-submit {
-        background: #4497efff;
+        background: #4497ef;
         color: white;
         border: none;
         border-radius: 15px;
@@ -400,10 +406,10 @@
                             </colgroup>
                             <thead>
                                 <tr>
-                                    <th class="col-divider" style="background: #8bbd65; border:none; border-right: 2px solid rgba(255,255,255,0.4);">MOLECULE</th>
-                                    <th style="background: #8bbd65; border:none;">MOLECULE NAME</th>
-                                    <th style="background: #8bbd65; border:none;">MASS (Da)</th>
-                                    <th class="text-center" style="vertical-align: middle; background: #8bbd65; border:none;">
+                                    <th class="col-divider">MOLECULE</th>
+                                    <th>MOLECULE NAME</th>
+                                    <th>MASS (Da)</th>
+                                    <th class="text-center" style="vertical-align: middle;">
                                         <label for="select-all" class="d-block mb-1" style="font-size: 0.85rem; cursor:pointer;">SELECT ALL</label>
                                         <div class="checkbox-wrapper">
                                             <input id="select-all" type="checkbox" name="select-all" value="select-all"/>
@@ -426,7 +432,7 @@
                                 <tr>
                                     <td class="font-weight-bold col-divider" style="font-size: 1.25rem;">{{ molecule.html|safe }}</td>
                                     <td>{{ molecule.names }}</td>  
-                                    <td class="text-muted font-weight-bold">{{ molecule.mass|stringformat:".3f" }}</td>
+                                    <td>{{ molecule.mass|stringformat:".3f" }}</td>
                                     <td class="text-center" style="vertical-align: middle;">
                                         <div class="checkbox-wrapper">
                                             <input class="molecule-checkbox" type="checkbox" name="molecule" value="{{ molecule.slug }}">
@@ -648,4 +654,3 @@
 </script>
 
 {% endblock %}
-

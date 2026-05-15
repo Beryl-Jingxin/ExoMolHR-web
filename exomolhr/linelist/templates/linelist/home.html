@@ -284,7 +284,7 @@
                         </div>
                         <div class="col-6">
                             <div class="p-4 shadow-sm h-100 transition-hover d-flex flex-column justify-content-center"
-                                style="border-radius: 16px; background: #6fbd8f; min-height: 110px;">
+                                style="border-radius: 16px; background: #78c891; min-height: 110px;">
                                 <div class="display-6 fw-bold text-white mb-1" style="font-size: 3rem;">{{ num_iso }}</div>
                                 <div class="text-uppercase fw-bold text-white"
                                     style="letter-spacing: 0.5px; font-size: 0.8rem;">Isotopologues</div>
@@ -292,7 +292,7 @@
                         </div>
                         <div class="col-12 mt-3">
                             <div class="p-4 shadow-sm h-100 transition-hover d-flex flex-column justify-content-center"
-                                style="border-radius: 16px; background: #47a49d; min-height: 110px;">
+                                style="border-radius: 16px; background: #77bab7; min-height: 110px;">
                                 <div class="display-5 fw-bold text-white mb-2" style="font-size: 3.2rem;">{{ total_lines }}</div>
                                 <div class="text-uppercase fw-bold text-white"
                                     style="letter-spacing: 1px; font-size: 0.9rem;">Total Spectral Lines</div>
@@ -300,10 +300,10 @@
                         </div>
                     </div>
                     
-                    <div class="mt-auto p-3 bg-light border-start border-4 shadow-sm" style="border-radius: 12px; border-color: #47a49d !important; background: rgba(255,255,255,0.7) !important;">
+                    <div class="mt-auto p-3 bg-light border-start border-4 shadow-sm" style="border-radius: 12px; border-color: #77bab7 !important; background: rgba(255,255,255,0.7) !important;">
                         <p class="mb-0 text-dark" style="font-size: 0.95rem; text-align: justify;">
                             These statistics represent the current data within ExoMolHR. We continuously expand and update our collection in tandem with the latest releases from the main 
-                            <a href="https://www.exomol.com" target="_blank" class="fw-bold text-decoration-none" style="color: #47a49d;">ExoMol database</a>.
+                            <a href="https://www.exomol.com" target="_blank" class="fw-bold text-decoration-none" style="color: #77bab7;">ExoMol database</a>.
                         </p>
                     </div>
                 </div>
@@ -320,11 +320,11 @@
                     <div class="updates-container">
                         {% if recent_updates %}
                             {% for update in recent_updates %}
-                            <div class="update-item" {% if update.is_highlighted %}style="border: 2px solid #FF8E53; box-shadow: 0 8px 25px rgba(255, 107, 107, 0.12);"{% endif %}>
+                            <div class="update-item" {% if update.is_highlighted %}style="border: 2px solid #f0a767; box-shadow: 0 8px 25px rgba(255, 107, 107, 0.12);"{% endif %}>
                                 {% if update.is_highlighted %}
-                                <div class="update-date-vert" style="background: linear-gradient(135deg, #FF6B6B, #FF8E53);">
+                                <div class="update-date-vert" style="background: linear-gradient(135deg, #ed8b8b, #f0a767);">
                                 {% else %}
-                                <div class="update-date-vert" style="background-color: {% cycle '#BFDFD2' '#51999F' '#4198AC' '#7BC0CD' '#DBCB92' '#ECB66C' '#EA9E58' '#ED8D5A' %};">
+                                <div class="update-date-vert" style="background-color: {% cycle '#acbddb' '#acc7db' '#accedb' '#acdbce' '#acdbc2' '#acdbb5' '#b8dbac' '#cbdbac' %};">
                                 {% endif %}
                                     <span class="month-year">{{ update.date|date:"Y" }}</span>
                                     <span class="day">{{ update.date|date:"d M" }}</span>
@@ -333,7 +333,7 @@
                                     <h4 class="update-title">
                                         {{ update.title|safe }}
                                         {% if update.is_highlighted %}
-                                        <span class="badge rounded-pill ms-2" style="background: linear-gradient(135deg, #FF6B6B, #FF8E53); color: #ffffff; font-size: 0.75rem; vertical-align: middle; padding: 0.25em 0.8em; letter-spacing: 0.5px; display: inline-flex; align-items: center; justify-content: center; transform: translateY(-3px); height: 22px;">🔥 HOT</span>
+                                        <span class="badge rounded-pill ms-2" style="background: linear-gradient(135deg, #ed8b8b, #f0a767); color: #ffffff; font-size: 0.75rem; vertical-align: middle; padding: 0.25em 0.8em; letter-spacing: 0.5px; display: inline-flex; align-items: center; justify-content: center; transform: translateY(-3px); height: 22px;">🔥 HOT</span>
                                         {% endif %}
                                     </h4>
                                     <div class="update-content">{{ update.content|safe }}</div>

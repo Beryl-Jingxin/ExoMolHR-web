@@ -165,11 +165,11 @@
         <div class="updates-body">
             {% if all_updates %}
                 {% for update in all_updates %}
-                <div class="update-entry" {% if update.is_highlighted %}style="border: 2px solid #FF8E53; box-shadow: 0 10px 30px rgba(255, 107, 107, 0.15);"{% endif %}>
+                <div class="update-entry" {% if update.is_highlighted %}style="border: 2px solid #f0a767; box-shadow: 0 10px 30px rgba(255, 107, 107, 0.15);"{% endif %}>
                     {% if update.is_highlighted %}
-                    <div class="update-date-col" style="background: linear-gradient(135deg, #FF6B6B, #FF8E53);">
+                    <div class="update-date-col" style="background: linear-gradient(135deg, #ed8b8b, #f0a767); ">
                     {% else %}
-                    <div class="update-date-col" style="background-color: {% cycle '#BFDFD2' '#51999F' '#4198AC' '#7BC0CD' '#DBCB92' '#ECB66C' '#EA9E58' '#ED8D5A' %};">
+                    <div class="update-date-col" style="background-color: {% cycle '#acbddb' '#acc7db' '#accedb' '#acdbce' '#acdbc2' '#acdbb5' '#b8dbac' '#cbdbac' %};">
                     {% endif %}
                         <span class="month-year">{{ update.date|date:"Y" }}</span>
                         <span class="day">{{ update.date|date:"d M" }}</span>
@@ -178,7 +178,7 @@
                         <h4 class="update-title-col">
                             {{ update.title|safe }}
                             {% if update.is_highlighted %}
-                            <span class="badge rounded-pill ms-2" style="background: linear-gradient(135deg, #FF6B6B, #FF8E53); color: #ffffff; font-size: 0.85rem; vertical-align: middle; padding: 0.25em 0.8em; letter-spacing: 0.5px; display: inline-flex; align-items: center; justify-content: center; transform: translateY(-3px); height: 24px;">🔥 IMPORTANT</span>
+                            <span class="badge rounded-pill ms-2" style="background: linear-gradient(135deg, #ed8b8b, #f0a767); color: #ffffff; font-size: 0.85rem; vertical-align: middle; padding: 0.25em 0.8em; letter-spacing: 0.5px; display: inline-flex; align-items: center; justify-content: center; transform: translateY(-3px); height: 24px;">🔥 IMPORTANT</span>
                             {% endif %}
                         </h4>
                         <div class="update-entry-content">{{ update.content|safe }}</div>

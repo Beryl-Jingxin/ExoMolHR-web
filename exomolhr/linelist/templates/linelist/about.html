@@ -53,6 +53,52 @@
     box-shadow: 0 18px 45px rgba(15, 35, 60, 0.12) !important;
   }
 
+  .stats-grid {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 1.25rem;
+    margin-bottom: 3rem;
+  }
+
+  .stat-card {
+    min-height: 132px;
+    padding: 1.5rem;
+    border-radius: 18px;
+    box-shadow: 0 0.125rem 0.25rem rgba(0, 0, 0, 0.075);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    text-align: center;
+  }
+
+  .stat-card-lines {
+    grid-column: 1 / -1;
+    min-height: 142px;
+  }
+
+  .stat-number {
+    color: #fff;
+    font-weight: 800;
+    line-height: 1;
+    font-size: clamp(1.9rem, 4vw, 2.6rem);
+    max-width: 100%;
+    overflow-wrap: anywhere;
+  }
+
+  .stat-card-lines .stat-number {
+    font-size: clamp(2rem, 5vw, 3rem);
+  }
+
+  .stat-label {
+    color: #fff;
+    text-transform: uppercase;
+    font-weight: 800;
+    letter-spacing: 1px;
+    font-size: 0.86rem;
+    margin-top: 0.85rem;
+  }
+
   @media (max-width: 768px) {
     .about-wrap {
       margin-top: 1.25rem;
@@ -66,6 +112,16 @@
 
     .about-title {
       font-size: 1.8rem;
+    }
+
+    .stats-grid {
+      grid-template-columns: 1fr;
+      gap: 1rem;
+    }
+
+    .stat-card,
+    .stat-card-lines {
+      min-height: 122px;
     }
   }
 </style>
@@ -108,30 +164,18 @@
             </div>
 
             <h4 class="text-center fw-bold text-secondary mb-4">Current Database Statistics</h4>
-            <div class="row g-4 text-center mb-5">
-                <div class="col-md-4">
-                    <div class="p-4 shadow-sm h-100 transition-hover"
-                        style="border-radius: 18px; background: #9acda2;">
-                        <div class="display-5 fw-bold text-white mb-2" style="font-size: 2rem;">{{ num_mol }}</div>
-                        <div class="text-uppercase fw-bold text-white"
-                            style="letter-spacing: 1px; font-size: 0.9rem;">Molecules</div>
-                    </div>
+            <div class="stats-grid">
+                <div class="stat-card transition-hover" style="background: #9acda2;">
+                    <div class="stat-number">{{ num_mol }}</div>
+                    <div class="stat-label">Molecules</div>
                 </div>
-                <div class="col-md-4">
-                    <div class="p-4 shadow-sm h-100 transition-hover"
-                        style="border-radius: 18px; background: #6fbd8f;">
-                        <div class="display-5 fw-bold text-white mb-2" style="font-size: 2rem;">{{ num_iso }}</div>
-                        <div class="text-uppercase fw-bold text-white"
-                            style="letter-spacing: 1px; font-size: 0.9rem;">Isotopologues</div>
-                    </div>
+                <div class="stat-card transition-hover" style="background: #78c891;">
+                    <div class="stat-number">{{ num_iso }}</div>
+                    <div class="stat-label">Isotopologues</div>
                 </div>
-                <div class="col-md-4">
-                    <div class="p-4 shadow-sm h-100 transition-hover"
-                        style="border-radius: 18px; background: #47a49d;">
-                        <div class="display-5 fw-bold text-white mb-2" style="font-size: 2rem;">{{ total_lines }}</div>
-                        <div class="text-uppercase fw-bold text-white"
-                            style="letter-spacing: 1px; font-size: 0.9rem;">Spectral Lines</div>
-                    </div>
+                <div class="stat-card stat-card-lines transition-hover" style="background: #77bab7;">
+                    <div class="stat-number">{{ total_lines }}</div>
+                    <div class="stat-label">Total Spectral Lines</div>
                 </div>
             </div>
 
