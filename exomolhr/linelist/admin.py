@@ -21,8 +21,6 @@ class HRMetaAdmin(admin.ModelAdmin):
     list_display = (
         "data_filename",
         "isotopologue",
-        "numin",
-        "numax",
         "created_at",
         "updated_at",
     )

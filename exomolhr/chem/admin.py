@@ -33,7 +33,6 @@ class MoleculeAdmin(SortableAdminMixin, admin.ModelAdmin):
     list_display = (
         "ordinary_formula",
         "names",
-        "mass",
         "created_at",
         "updated_at",
     )
@@ -46,10 +45,10 @@ admin.site.register(Molecule, MoleculeAdmin)
 
 
 class IsotopologueAdmin(SortableAdminMixin, admin.ModelAdmin):
+    alpha_ordering = ("molecule__ordinary_formula", "ordinary_formula")
     list_display = (
         "ordinary_formula",
         "molecule",
-        "mass",
         "created_at",
         "updated_at",
     )
