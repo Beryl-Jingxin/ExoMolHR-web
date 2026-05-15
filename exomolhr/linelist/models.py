@@ -11,6 +11,8 @@ class HRMeta(models.Model):
     data_filename = models.CharField(max_length=72)
     numin = models.FloatField(default=0)
     numax = models.FloatField(default=100000)
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
 
     class Meta:
         app_label = "linelist"

@@ -15,6 +15,8 @@ class Molecule(models.Model):
     cml = models.TextField(null=True, blank=True)
     slug = models.CharField(max_length=80, unique=True)
     names = models.CharField(max_length=2000, blank=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
 
     def __str__(self):
         return self.ordinary_formula
@@ -36,6 +38,8 @@ class Isotopologue(models.Model):
     cml = models.TextField(null=True, blank=True)
     slug = models.CharField(max_length=160, unique=True)
     point_group = models.CharField(max_length=5, blank=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
 
     def __str__(self):
         return self.ordinary_formula
