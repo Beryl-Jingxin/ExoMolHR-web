@@ -2,7 +2,7 @@ from itertools import cycle
 from zipfile import ZipFile
 from django.shortcuts import render
 
-from django.http import Http404, JsonResponse, HttpResponseRedirect, HttpResponse, FileResponse
+from django.http import Http404, JsonResponse, HttpResponse, FileResponse
 from django.urls import reverse
 from django.conf import settings
 from django.utils.datastructures import MultiValueDictKeyError
@@ -106,8 +106,8 @@ def qnlabel(request):
 
             J_pair = []
             for lbl, fmt in main_pairs:
-                if "J'" in lbl:
-                    J_pair.append((lbl.replace("'", ""), fmt))
+                if "J" in lbl:
+                    J_pair.append((lbl, fmt))
                     break
 
             qn_pair = list(zip(split_csv_field(qn_lbl), split_csv_field(qn_fmt)))
@@ -215,7 +215,7 @@ def select_isotopologues(request, selected_molecules):
 
 
 def view_pf(request, pf_filename):
-    pf_path = settings.DATA_DIR / pf_filename
+    pf_path = settings.DATA_DIR / 'pf' / pf_filename
     if not pf_path.exists():
         raise Http404("Partition function file not found.")
     try:
@@ -224,6 +224,13 @@ def view_pf(request, pf_filename):
     except Exception as e:
         raise Http404(f"Error reading file: {e}")
     return HttpResponse(content, content_type="text/plain; charset=utf-8")
+
+
+def exomolhr_all_json(request):
+    master_path = settings.RES_DIR / "exomolhr.all.json"
+    if not master_path.exists():
+        raise Http404("exomolhr.all.json not found")
+    return FileResponse(open(master_path, "rb"),content_type="application/json")
 
 
 def select_filters(request, iso_slugs):
@@ -394,8 +401,8 @@ def download_csv(request, csv_filename):
     # If no extension is provided, default to .csv
     if '.' not in safe_filename:
         safe_filename += '.csv'
-        
-    file_path = Path('/mnt/data/exomolhr/exomolhr_data') / safe_filename
+
+    file_path = settings.DATA_DIR / 'csv' / safe_filename
     
     if file_path.exists():
         content_type, encoding = mimetypes.guess_type(str(file_path))
@@ -788,7 +795,7 @@ def calc_spec(numin, numax, T, Smin, isos):
     jobs = []
     for iso in isos:
         hrmeta = HRMeta.objects.get(isotopologue=iso)
-        ll_name = settings.DATA_DIR / f"{hrmeta.data_filename}.csv"
+        ll_name = settings.DATA_DIR / 'csv' / f"{hrmeta.data_filename}.csv"
         Q = hrmeta.get_Q(T)
         jobs.append((iso.slug, ll_name, Q, numin, numax, T, Smin, filestem, settings.RESULTS_DIR))
 

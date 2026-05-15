@@ -24,7 +24,7 @@ class HRMeta(models.Model):
         # Lop off the molecule from the start of the data_filename and add
         # the extension .pf.
         pf_file = "__".join(f for f in self.data_filename.split("__")[1:]) + ".pf"
-        pf_path = settings.DATA_DIR / pf_file
+        pf_path = settings.DATA_DIR / 'pf' / pf_file
         Tgrid, Qgrid = np.loadtxt(pf_path, unpack=True)
         if T < 0 or T > Qgrid[-1]:
             raise ValueError(
