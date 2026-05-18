@@ -99,6 +99,60 @@
     margin-top: 0.85rem;
   }
 
+  .criteria-strip {
+    margin: 0 auto 3rem;
+    padding: 1.15rem 1.4rem 1.25rem;
+    background: linear-gradient(180deg, #ffffff 0%, #f8fafc 100%);
+    border: 1px solid #dbe8ed;
+    border-radius: 16px;
+    box-shadow: 0 10px 28px rgba(21, 49, 79, 0.06);
+    text-align: center;
+  }
+
+  .criteria-label {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    margin-bottom: 0.85rem;
+    padding: 0.25rem 0.8rem;
+    background: #edf7fa;
+    border: 1px solid #cfe4eb;
+    border-radius: 999px;
+    color: #15314f;
+    font-size: 0.78rem;
+    font-weight: 800;
+    text-transform: uppercase;
+    letter-spacing: 0.8px;
+  }
+
+  .criteria-grid {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr);
+    align-items: stretch;
+    gap: 1rem;
+  }
+
+  .criteria-pill {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    min-height: 56px;
+    padding: 0.75rem 1rem;
+    background: #ffffff;
+    border: 1px solid #d7e7ec;
+    border-radius: 14px;
+    color: #15314f;
+    font-size: 1rem;
+    font-weight: 700;
+    line-height: 1.35;
+    box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.9);
+  }
+
+  .criteria-divider {
+    width: 1px;
+    background: linear-gradient(180deg, transparent 0%, #b7d3dc 18%, #b7d3dc 82%, transparent 100%);
+  }
+
   @media (max-width: 768px) {
     .about-wrap {
       margin-top: 1.25rem;
@@ -122,6 +176,22 @@
     .stat-card,
     .stat-card-lines {
       min-height: 122px;
+    }
+
+    .criteria-strip {
+      padding: 1rem;
+      margin-bottom: 2rem;
+    }
+
+    .criteria-grid {
+      grid-template-columns: 1fr;
+      gap: 0.7rem;
+    }
+
+    .criteria-divider {
+      width: 100%;
+      height: 1px;
+      background: linear-gradient(90deg, transparent 0%, #b7d3dc 18%, #b7d3dc 82%, transparent 100%);
     }
   }
 </style>
@@ -147,6 +217,15 @@
                 </p>
             </div>
 
+            <div class="criteria-strip">
+                <div class="criteria-label">Data quality thresholds</div>
+                <div class="criteria-grid">
+                    <div class="criteria-pill">Energy uncertainty &Delta;E &le; 0.05 cm<sup>-1</sup></div>
+                    <div class="criteria-divider" aria-hidden="true"></div>
+                    <div class="criteria-pill">Resolving power R &gt; 100 000</div>
+                </div>
+            </div>
+
             <div class="p-4 mb-5 bg-light border-start border-4 border-primary shadow-sm" style="border-radius: 18px;">
                 <p class="mb-0 fs-5 text-dark" style="line-height: 1.8; text-align: justify;">
                     Our freely accessible platform allows you to generate line positions with calculated
@@ -156,8 +235,7 @@
                     <code class="fs-6 px-2 py-1 bg-white rounded shadow-sm">.csv</code> file, or calculate cross
                     sections using our integrated
                     <a href="https://pypi.org/project/pyexocross/" target="_blank"
-                        class="text-decoration-none fw-bold" style="color: #60c460ff;">PyExoCross Python
-                        package</a>
+                        class="text-decoration-none fw-bold" style="color: #60c460ff;">PyExoCross Python package</a>
                     or <a href="https://github.com/Beryl-Jingxin/PyExoCross" target="_blank"
                         class="text-decoration-none fw-bold" style="color: #60c460ff;">PyExoCross Python program</a>.
                 </p>
