@@ -1,6 +1,6 @@
 from itertools import cycle
 from zipfile import ZipFile
-from django.shortcuts import render
+from django.shortcuts import redirect, render
 
 from django.http import Http404, JsonResponse, HttpResponse, FileResponse
 from django.urls import reverse
@@ -171,6 +171,13 @@ def updates(request):
     return render(request, "linelist/updates.html", {'all_updates': all_updates})
 
 
+def exomolhr_all_json(request):
+    master_path = settings.RES_DIR / "exomolhr.all.json"
+    if not master_path.exists():
+        raise Http404("exomolhr.all.json not found")
+    return FileResponse(open(master_path, "rb"),content_type="application/json")
+
+
 def get_linelist(request):
     if request.GET.get("molecule"):
         molecules = request.GET.getlist("molecule")
@@ -226,11 +233,32 @@ def view_pf(request, pf_filename):
     return HttpResponse(content, content_type="text/plain; charset=utf-8")
 
 
-def exomolhr_all_json(request):
-    master_path = settings.RES_DIR / "exomolhr.all.json"
-    if not master_path.exists():
-        raise Http404("exomolhr.all.json not found")
-    return FileResponse(open(master_path, "rb"),content_type="application/json")
+def download_csv(request, csv_filename):
+    import os
+    from pathlib import Path
+    import mimetypes
+    
+    # Ensure it only accesses the intended directory
+    safe_filename = os.path.basename(csv_filename).strip()
+    
+    if not safe_filename.endswith(".csv"):
+        return redirect("linelist:download_csv", csv_filename=f"{safe_filename}.csv", permanent=True)
+
+    file_path = settings.DATA_DIR / 'csv' / safe_filename
+    
+    if file_path.exists():
+        content_type, encoding = mimetypes.guess_type(str(file_path))
+        if not content_type:
+            content_type = 'text/plain'
+            
+        # USER REQUEST: .json and .pf should display inline (as_attachment=False)
+        # .csv should be downloaded directly (as_attachment=True)
+        is_inline = any(safe_filename.endswith(ext) for ext in ['.json', '.pf'])
+        as_attachment = not is_inline
+        
+        return FileResponse(open(file_path, "rb"), content_type=content_type, as_attachment=as_attachment, filename=safe_filename)
+    else:
+        raise Http404(f"File '{safe_filename}' not found.")
 
 
 def select_filters(request, iso_slugs):
@@ -388,35 +416,6 @@ def download_archive(request):
         return FileResponse(open(file_path, "rb"), as_attachment=True, filename=archive_name)
     else:
         raise Http404("File not found in results directory.")
-
-
-def download_csv(request, csv_filename):
-    import os
-    from pathlib import Path
-    import mimetypes
-    
-    # Ensure it only accesses the intended directory
-    safe_filename = os.path.basename(csv_filename).strip()
-    
-    # If no extension is provided, default to .csv
-    if '.' not in safe_filename:
-        safe_filename += '.csv'
-
-    file_path = settings.DATA_DIR / 'csv' / safe_filename
-    
-    if file_path.exists():
-        content_type, encoding = mimetypes.guess_type(str(file_path))
-        if not content_type:
-            content_type = 'text/plain'
-            
-        # USER REQUEST: .json and .pf should display inline (as_attachment=False)
-        # .csv should be downloaded directly (as_attachment=True)
-        is_inline = any(safe_filename.endswith(ext) for ext in ['.json', '.pf'])
-        as_attachment = not is_inline
-        
-        return FileResponse(open(file_path, "rb"), content_type=content_type, as_attachment=as_attachment, filename=safe_filename)
-    else:
-        raise Http404(f"File '{safe_filename}' not found.")
 
 
 def ajax_data(request):
