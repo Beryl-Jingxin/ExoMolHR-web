@@ -437,6 +437,22 @@ def ajax_data(request):
             if file_path.exists():
                 df = pd.read_csv(file_path, usecols=["nu", "S"])
                 df = df[(df["nu"] >= numin) & (df["nu"] <= numax)]
+
+                MAX_POINTS_PER_ISO = 50000
+                MAX_TOTAL_PLOT_POINTS = 300000
+                n_iso = max(1, len(iso_slugs))
+                max_points_per_iso = min(
+                    MAX_POINTS_PER_ISO,
+                    max(20000, MAX_TOTAL_PLOT_POINTS // n_iso)
+                )
+                df = reduce_for_plot(
+                    df,
+                    x_col="nu",
+                    y_col="S",
+                    max_points=max_points_per_iso,
+                    top_k=3
+                )
+
                 data[f"x__{iso_slug}"] = df["nu"].tolist()
                 data[f"y__{iso_slug}"] = df["S"].tolist()
                 data[f"color__{iso_slug}"] = [isocolor] * len(df)
@@ -451,6 +467,35 @@ def ajax_data(request):
     response["Access-Control-Max-Age"] = "1000"
     response["Access-Control-Allow-Headers"] = "Content-Type"
     return response
+
+
+def reduce_for_plot(df, x_col="nu", y_col="S", max_points=50000, top_k=3):
+    df = df[[x_col, y_col]].dropna()
+
+    if len(df) <= max_points:
+        return df.sort_values(x_col)
+
+    n_bins = max(1, max_points // top_k)
+
+    x_min = df[x_col].min()
+    x_max = df[x_col].max()
+
+    if x_min == x_max:
+        return df.sort_values(x_col).head(max_points)
+
+    bins = np.linspace(x_min, x_max, n_bins + 1)
+
+    df = df.copy()
+    df["_bin"] = np.digitize(df[x_col], bins)
+
+    df_plot = (
+        df.sort_values(y_col, ascending=False)
+          .groupby("_bin", group_keys=False)
+          .head(top_k)
+          .sort_values(x_col)
+    )
+
+    return df_plot[[x_col, y_col]]
 
 
 def get_bokeh_html(iso_slugs, numin, numax, Smax, Smin=1e-35, output_files=None, select_by_wavelength=False):
@@ -474,6 +519,21 @@ def get_bokeh_html(iso_slugs, numin, numax, Smax, Smin=1e-35, output_files=None,
             if file_path.exists():
                 df = pd.read_csv(file_path, usecols=["nu", "S"])
                 df = df[(df["nu"] >= numin) & (df["nu"] <= numax)]
+
+                MAX_POINTS_PER_ISO = 50000
+                MAX_TOTAL_PLOT_POINTS = 300000
+                n_iso = max(1, len(iso_slugs))
+                max_points_per_iso = min(
+                    MAX_POINTS_PER_ISO,
+                    max(20000, MAX_TOTAL_PLOT_POINTS // n_iso)
+                )
+                df = reduce_for_plot(
+                    df,
+                    x_col="nu",
+                    y_col="S",
+                    max_points=max_points_per_iso,
+                    top_k=3
+                )
                 
                 if not df.empty:
                     true_nu_min = min(true_nu_min, df["nu"].min())
