@@ -11,7 +11,6 @@ import re
 import os
 import numpy as np
 import pandas as pd
-import numexpr as ne
 import bokeh.plotting as bp
 from bokeh.plotting import curdoc
 from bokeh.embed import components
@@ -826,8 +825,13 @@ def process_iso_worker(iso_slug, ll_name, Q, Q_ref, numin, numax, T, T_ref, Smin
     c, h, kB = 29979245800.0, 6.62607015e-34, 1.380649e-23
     c2 = h * c / kB
 
-    import numexpr as ne
-    ne.set_num_threads(numexpr_threads)
+    try:
+        import numexpr as ne
+        ne.set_num_threads(int(numexpr_threads))
+        use_numexpr = True
+    except ImportError:
+        ne = None
+        use_numexpr = False
     
     df = pd.read_csv(ll_name)
     df = df[(df["nu"] >= numin) & (df["nu"] <= numax)].copy()
@@ -839,16 +843,23 @@ def process_iso_worker(iso_slug, ll_name, Q, Q_ref, numin, numax, T, T_ref, Smin
         # This assumes df["S"] is the reference intensity, normally at 296 K.
         if "S" in df.columns:
             S_ref = df["S"].to_numpy(dtype=np.float64, copy=False)
-            abundance = 1
             invT = 1 / T
             invTref = 1 / T_ref
-            q_ratio = Q_ref / Q * abundance
-            S_vals = ne.evaluate(
-                "S_ref * q_ratio "
-                "* exp(-c2 * Epp * (invT - invTref)) "
-                "* (1 - exp(-c2 * nu * invT)) "
-                "/ (1 - exp(-c2 * nu * invTref))"
-            )
+            q_ratio = Q_ref / Q 
+            if use_numexpr:
+                S_vals = ne.evaluate(
+                    "S_ref * q_ratio "
+                    "* exp(-c2 * Epp * (invT - invTref)) "
+                    "* (1 - exp(-c2 * nu * invT)) "
+                    "/ (1 - exp(-c2 * nu * invTref))"
+                )
+            else:
+                S_vals = (
+                    S_ref * q_ratio
+                    * np.exp(-c2 * Epp * (invT - invTref))
+                    * (1 - np.exp(-c2 * nu * invT))
+                    / (1 - np.exp(-c2 * nu * invTref))
+                )
             df["S"] = S_vals
         else:
             # Fallback: if the CSV does not contain S(T_ref), compute from A.
@@ -857,14 +868,22 @@ def process_iso_worker(iso_slug, ll_name, Q, Q_ref, numin, numax, T, T_ref, Smin
             A = df["A"].to_numpy(dtype=np.float64, copy=False)
             fac = 1 / (8 * np.pi * c)
             abundance = 1
-            const = fac * abundance / Q
+            const = fac / Q
             c2oT = c2 / T
-            S_vals = ne.evaluate(
-                "const * gp * A "
-                "* exp(-c2oT * Epp) "
-                "* (1 - exp(-c2oT * nu)) "
-                "/ (nu * nu)"
-            )
+            if use_numexpr:
+                S_vals = ne.evaluate(
+                    "const * gp * A "
+                    "* exp(-c2oT * Epp) "
+                    "* (1 - exp(-c2oT * nu)) "
+                    "/ (nu * nu)"
+                )
+            else:
+                S_vals = (
+                    const * gp * A
+                    * np.exp(-c2oT * Epp)
+                    * (1.0 - np.exp(-c2oT * nu))
+                    / (nu * nu)
+                )
             df.insert(1, "S", S_vals)
         # Apply intensity cutoff after converting to target temperature.
         df = df[df["S"] >= Smin]
