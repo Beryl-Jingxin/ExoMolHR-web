@@ -11,6 +11,7 @@ import re
 import os
 import numpy as np
 import pandas as pd
+import numexpr as ne
 import bokeh.plotting as bp
 from bokeh.plotting import curdoc
 from bokeh.embed import components
@@ -820,33 +821,52 @@ def get_bokeh_html(iso_slugs, numin, numax, Smax, Smin=1e-35, output_files=None,
     html = '<div class="bokeh-plot">' + bokeh_script + bokeh_div + "</div>"
     return html
 
-def process_iso_worker(iso_slug, ll_name, Q, numin, numax, T, Smin, filestem, results_dir):
+def process_iso_worker(iso_slug, ll_name, Q, Q_ref, numin, numax, T, T_ref, Smin, filestem, results_dir, numexpr_threads=1):
     
     c, h, kB = 29979245800.0, 6.62607015e-34, 1.380649e-23
     c2 = h * c / kB
-    c2oT = c2 / T
-    fac = 1 / (8 * np.pi * c)
-    abundance = 1
+
+    import numexpr as ne
+    ne.set_num_threads(numexpr_threads)
     
     df = pd.read_csv(ll_name)
     df = df[(df["nu"] >= numin) & (df["nu"] <= numax)].copy()
-    
-    nu = df["nu"]
+
     if len(df) > 0:
-        S_vals = (
-            fac
-            * df["g'"]
-            * df["A"]
-            * np.exp(-c2oT * df['E"'])
-            * (1 - np.exp(-c2oT * nu))
-            / nu**2
-            / Q
-            * abundance
-        )
+        nu = df["nu"].to_numpy(dtype=np.float64, copy=False)
+        Epp = df['E"'].to_numpy(dtype=np.float64, copy=False)
+        # Prefer temperature-rescaling from reference intensity S(T_ref).
+        # This assumes df["S"] is the reference intensity, normally at 296 K.
         if "S" in df.columns:
+            S_ref = df["S"].to_numpy(dtype=np.float64, copy=False)
+            abundance = 1
+            invT = 1 / T
+            invTref = 1 / T_ref
+            q_ratio = Q_ref / Q * abundance
+            S_vals = ne.evaluate(
+                "S_ref * q_ratio "
+                "* exp(-c2 * Epp * (invT - invTref)) "
+                "* (1 - exp(-c2 * nu * invT)) "
+                "/ (1 - exp(-c2 * nu * invTref))"
+            )
             df["S"] = S_vals
         else:
+            # Fallback: if the CSV does not contain S(T_ref), compute from A.
+            # This keeps the function robust for older/local files.
+            gp = df["g'"].to_numpy(dtype=np.float64, copy=False)
+            A = df["A"].to_numpy(dtype=np.float64, copy=False)
+            fac = 1 / (8 * np.pi * c)
+            abundance = 1
+            const = fac * abundance / Q
+            c2oT = c2 / T
+            S_vals = ne.evaluate(
+                "const * gp * A "
+                "* exp(-c2oT * Epp) "
+                "* (1 - exp(-c2oT * nu)) "
+                "/ (nu * nu)"
+            )
             df.insert(1, "S", S_vals)
+        # Apply intensity cutoff after converting to target temperature.
         df = df[df["S"] >= Smin]
     else:
         if "S" in df.columns:
@@ -870,23 +890,32 @@ def calc_spec(numin, numax, T, Smin, isos):
     nlines = 0
     output_files = {}
     Smax = 0
-    
+    T_ref = 296
+
     jobs = []
     for iso in isos:
         hrmeta = HRMeta.objects.get(isotopologue=iso)
         ll_name = settings.DATA_DIR / 'csv' / f"{hrmeta.data_filename}.csv"
         Q = hrmeta.get_Q(T)
-        jobs.append((iso.slug, ll_name, Q, numin, numax, T, Smin, filestem, settings.RESULTS_DIR))
+        Q_ref = hrmeta.get_Q(T_ref)
+        jobs.append((iso.slug, ll_name, Q, Q_ref, numin, numax, T, T_ref, Smin, filestem, settings.RESULTS_DIR))
 
-    max_workers = min(2, len(jobs))
-    with concurrent.futures.ProcessPoolExecutor(max_workers=max_workers) as executor:
-        futures = [executor.submit(process_iso_worker, *job) for job in jobs]
-        for future in concurrent.futures.as_completed(futures):
-            iso_slug, output_filename, iso_nlines, isoSmax = future.result()
-            output_files[iso_slug] = output_filename
-            nlines += iso_nlines
-            if float(isoSmax) > float(Smax):
-                Smax = float(isoSmax)
+    if len(jobs) == 1:
+        job = jobs[0] + (4,)
+        iso_slug, output_filename, iso_nlines, isoSmax = process_iso_worker(*job)
+        output_files[iso_slug] = output_filename
+        nlines += iso_nlines
+        Smax = max(float(Smax), float(isoSmax))
+    else:
+        max_workers = min(2, len(jobs))
+        jobs = [job + (2,) for job in jobs]
+        with concurrent.futures.ProcessPoolExecutor(max_workers=max_workers) as executor:
+            futures = [executor.submit(process_iso_worker, *job) for job in jobs]
+            for future in concurrent.futures.as_completed(futures):
+                iso_slug, output_filename, iso_nlines, isoSmax = future.result()
+                output_files[iso_slug] = output_filename
+                nlines += iso_nlines
+                Smax = max(float(Smax), float(isoSmax))
 
     archive_name = f"{filestem}.zip"
     archive_size = make_zip_bundle(archive_name, output_files.values())
