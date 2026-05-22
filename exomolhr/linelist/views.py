@@ -333,7 +333,6 @@ def get_data(request):
     def get_default_numin(isos):
         return 0.1
 
-
     try:
         numin = request.GET['numin']
         select_by_wavelength = False
@@ -374,7 +373,28 @@ def get_data(request):
         except ValueError:
             numin = get_default_numin(isos)
             wvmax = 1.e7 / numin
-        
+
+    n_iso = len(iso_slugs)
+    selected_range = max(0, numax - numin)
+    MAX_ISOS_HARD = 30
+    REQUEST_COST_LIMIT = 500000
+    request_cost = n_iso * selected_range
+    if n_iso > MAX_ISOS_HARD or request_cost > REQUEST_COST_LIMIT:
+        return render(
+            request,
+            "linelist/request.html",
+            {
+                "n_iso": n_iso,
+                "selected_range": f"{selected_range:.2f}",
+                "request_cost": f"{request_cost:.0f}",
+                "max_isos": MAX_ISOS_HARD,
+                "cost_limit": REQUEST_COST_LIMIT,
+                "numin": f"{numin:.4f}",
+                "numax": f"{numax:.4f}",
+            },
+            status=400
+        )
+   
     archive_name, archive_size, output_files, nlines, Smax = calc_spec(
         numin, numax, T, Smin, isos
     )

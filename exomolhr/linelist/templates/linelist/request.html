@@ -1,0 +1,220 @@
+{% extends 'theme/base.html' %}
+
+{% block content %}
+
+<style>
+    .request-wrap {
+        max-width: 900px;
+        margin: 3rem auto;
+        padding: 0 1rem;
+    }
+
+    .request-card {
+        background: linear-gradient(135deg, rgba(255,255,255,0.75), rgba(255,255,255,0.35));
+        backdrop-filter: blur(15px);
+        -webkit-backdrop-filter: blur(15px);
+        border-radius: 20px;
+        border: 1px solid rgba(255,255,255,0.5);
+        box-shadow: 0 10px 40px rgba(31,38,135,0.10);
+        padding: 2.4rem 2.6rem;
+        text-align: center;
+        animation: fadeInUp 0.45s ease-out both;
+    }
+
+    .request-badge {
+        display: inline-block;
+        background: linear-gradient(135deg, rgb(219, 142, 142),rgb(90, 159, 234));
+        color: #fff;
+        font-size: 0.78rem;
+        font-weight: 800;
+        padding: 5px 12px;
+        border-radius: 999px;
+        letter-spacing: 1px;
+        text-transform: uppercase;
+        margin-bottom: 1.2rem;
+    }
+
+    .request-title {
+        font-family: 'Josefin Sans', sans-serif;
+        font-size: 2rem;
+        font-weight: 800;
+        color: #2c3e50;
+        margin-bottom: 1rem;
+    }
+
+    .request-subtitle {
+        color: #6c757d;
+        font-size: 1.05rem;
+        line-height: 1.7;
+        margin-bottom: 2rem;
+    }
+
+    .request-info-grid {
+        display: grid;
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        gap: 1rem;
+        margin-bottom: 2rem;
+    }
+
+    .request-info-card {
+        background: rgba(255,255,255,0.75);
+        border: 1px solid rgba(255,255,255,0.8);
+        border-radius: 16px;
+        padding: 1.2rem;
+        box-shadow: 0 4px 15px rgba(0,0,0,0.04);
+    }
+
+    .request-info-label {
+        font-size: 0.78rem;
+        font-weight: 800;
+        color: #6c757d;
+        text-transform: uppercase;
+        letter-spacing: 0.8px;
+        margin-bottom: 0.5rem;
+    }
+
+    .request-info-value {
+        font-size: 1.25rem;
+        font-weight: 800;
+        color: #4497ef;
+    }
+
+    .request-warning {
+        background: linear-gradient(135deg, #fff9cd, #f9ebc1);
+        border: 1px solid #fbdd83da;
+        border-radius: 16px;
+        padding: 1.2rem 1.4rem;
+        color: #856404;
+        font-weight: 600;
+        line-height: 1.7;
+        margin-bottom: 2rem;
+        text-align: left;
+    }
+
+    .request-actions {
+        display: flex;
+        justify-content: center;
+        gap: 1rem;
+        flex-wrap: wrap;
+    }
+
+    .btn-request-primary {
+        background: linear-gradient(135deg, rgb(90, 159, 234), rgb(219, 142, 142));
+        color: white;
+        border: none;
+        border-radius: 14px;
+        font-family: 'Josefin Sans', sans-serif;
+        font-weight: 800;
+        font-size: 1rem;
+        padding: 12px 34px;
+        letter-spacing: 0.8px;
+        box-shadow: 0 8px 18px rgba(128,193,200,0.35);
+        transition: all 0.3s ease;
+        text-transform: uppercase;
+        text-decoration: none;
+        cursor: pointer;
+    }
+
+    .btn-request-primary:hover {
+        transform: translateY(-3px) scale(1.04);
+        box-shadow: 0 10px 22px rgba(149,211,175,0.55);
+        color: white;
+        text-decoration: none;
+    }
+
+    .btn-request-secondary {
+        background: #adb5bd;
+        color: white;
+        border: none;
+        border-radius: 14px;
+        font-family: 'Josefin Sans', sans-serif;
+        font-weight: 700;
+        font-size: 1rem;
+        padding: 12px 28px;
+        letter-spacing: 0.5px;
+        box-shadow: 0 5px 14px rgba(173,181,189,0.35);
+        transition: all 0.3s ease;
+        text-decoration: none;
+        cursor: pointer;
+    }
+
+    .btn-request-secondary:hover {
+        transform: translateY(-2px);
+        color: white;
+        text-decoration: none;
+    }
+
+    @keyframes fadeInUp {
+        from { opacity: 0; transform: translateY(16px); }
+        to { opacity: 1; transform: translateY(0); }
+    }
+
+    @media (max-width: 768px) {
+        .request-card {
+            padding: 1.8rem 1.4rem;
+        }
+
+        .request-title {
+            font-size: 1.6rem;
+        }
+
+        .request-info-grid {
+            grid-template-columns: 1fr;
+        }
+    }
+</style>
+
+<div class="request-wrap">
+    <div class="request-card">
+
+        <div class="request-badge">Request limit</div>
+
+        <h2 class="request-title">Request too large for online calculation</h2>
+
+        <p class="request-subtitle">
+            The selected calculation is too large for the online service. <br>
+            Please reduce the number of isotopologues or choose a narrower spectral range.
+        </p>
+
+        <div class="request-info-grid">
+            <div class="request-info-card">
+                <div class="request-info-label">Selected isotopologues</div>
+                <div class="request-info-value">{{ n_iso }}</div>
+            </div>
+
+            <div class="request-info-card">
+                <div class="request-info-label">Maximum allowed</div>
+                <div class="request-info-value" style="color:rgb(225, 108, 118);">{{ max_isos }}</div>
+            </div>
+
+            <div class="request-info-card">
+                <div class="request-info-label">Wavenumber range</div>
+                <div class="request-info-value">{{ selected_range }} cm<sup>-1</sup></div>
+            </div>
+
+            <div class="request-info-card">
+                <div class="request-info-label">Estimated request size</div>
+                <div class="request-info-value">{{ request_cost }}</div>
+            </div>
+        </div>
+
+        <div class="request-warning">
+            The online limit is <strong style="color:rgb(225, 108, 118);">{{ cost_limit }}</strong>.
+            You can usually solve this by narrowing the wavenumber or wavelength range,
+            deselecting some isotopologues, or submitting the calculation in smaller batches.
+        </div>
+
+        <div class="request-actions">
+            <button onclick="history.back()" class="btn-request-primary">
+                ← Modify Selection
+            </button>
+
+            <a href="{% url 'linelist:get_linelist' %}" class="btn-request-secondary">
+                Start Again
+            </a>
+        </div>
+
+    </div>
+</div>
+
+{% endblock %}
