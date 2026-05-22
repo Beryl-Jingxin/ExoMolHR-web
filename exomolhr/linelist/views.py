@@ -435,7 +435,7 @@ def ajax_data(request):
         if iso_slug in output_files:
             file_path = settings.RESULTS_DIR / output_files[iso_slug]
             if file_path.exists():
-                df = pd.read_csv(file_path)
+                df = pd.read_csv(file_path, usecols=["nu", "S"])
                 df = df[(df["nu"] >= numin) & (df["nu"] <= numax)]
                 data[f"x__{iso_slug}"] = df["nu"].tolist()
                 data[f"y__{iso_slug}"] = df["S"].tolist()
@@ -472,7 +472,7 @@ def get_bokeh_html(iso_slugs, numin, numax, Smax, Smin=1e-35, output_files=None,
         if output_files and iso_slug in output_files:
             file_path = settings.RESULTS_DIR / output_files[iso_slug]
             if file_path.exists():
-                df = pd.read_csv(file_path)
+                df = pd.read_csv(file_path, usecols=["nu", "S"])
                 df = df[(df["nu"] >= numin) & (df["nu"] <= numax)]
                 
                 if not df.empty:
@@ -798,7 +798,8 @@ def calc_spec(numin, numax, T, Smin, isos):
         Q = hrmeta.get_Q(T)
         jobs.append((iso.slug, ll_name, Q, numin, numax, T, Smin, filestem, settings.RESULTS_DIR))
 
-    with concurrent.futures.ProcessPoolExecutor() as executor:
+    max_workers = min(2, len(jobs))
+    with concurrent.futures.ProcessPoolExecutor(max_workers=max_workers) as executor:
         futures = [executor.submit(process_iso_worker, *job) for job in jobs]
         for future in concurrent.futures.as_completed(futures):
             iso_slug, output_filename, iso_nlines, isoSmax = future.result()
