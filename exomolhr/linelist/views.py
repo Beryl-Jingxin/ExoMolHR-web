@@ -9,6 +9,7 @@ from django.urls import reverse
 from django.conf import settings
 from django.utils.datastructures import MultiValueDictKeyError
 
+import logging
 import re
 import os
 import numpy as np
@@ -31,6 +32,7 @@ from .utils import make_decimal_timestamp, make_zip_bundle
 
 
 DOWNLOAD_COUNT_BASELINE = 10000
+logger = logging.getLogger(__name__)
 
 def get_download_counter_path():
     configured_path = getattr(settings, "DOWNLOAD_COUNTER_FILE", None)
@@ -77,6 +79,7 @@ def update_download_count(increment=0):
             fcntl.flock(f.fileno(), fcntl.LOCK_UN)
             return count
     except OSError:
+        logger.exception("Unable to update download counter at %s", get_download_counter_path())
         return DOWNLOAD_COUNT_BASELINE
 
 
