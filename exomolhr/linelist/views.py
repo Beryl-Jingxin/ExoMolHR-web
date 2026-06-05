@@ -1,3 +1,4 @@
+from decimal import Decimal, ROUND_CEILING, ROUND_FLOOR
 from itertools import cycle
 from zipfile import ZipFile
 from django.shortcuts import redirect, render
@@ -26,6 +27,16 @@ from chem.models import Molecule, Isotopologue
 from linelist.models import HRMeta
 from news.models import SiteUpdate
 from .utils import make_decimal_timestamp, make_zip_bundle
+
+
+def floor_to_decimal(value, places=6):
+    step = Decimal("1").scaleb(-places)
+    return float(Decimal(str(value)).quantize(step, rounding=ROUND_FLOOR))
+
+
+def ceil_to_decimal(value, places=6):
+    step = Decimal("1").scaleb(-places)
+    return float(Decimal(str(value)).quantize(step, rounding=ROUND_CEILING))
 
 
 def home(request):
@@ -282,8 +293,8 @@ def select_filters(request, iso_slugs):
         iso.tmax = tmax_dict.get(iso.slug, 'N/A')
         raw_vmin = vmin_dict.get(iso.slug, 0)
         raw_vmax = vmax_dict.get(iso.slug, 100000)
-        iso.vmin = f"{float(raw_vmin):.4f}" if raw_vmin is not None else "0.0000"
-        iso.vmax = f"{float(raw_vmax):.4f}" if raw_vmax is not None else "100000.0000"
+        iso.vmin = f"{float(raw_vmin):.6f}" if raw_vmin is not None else "0.000000"
+        iso.vmax = f"{float(raw_vmax):.6f}" if raw_vmax is not None else "100000.000000"
         try:
             tmax_values.append(float(iso.tmax))
         except (ValueError, TypeError):
@@ -298,20 +309,20 @@ def select_filters(request, iso_slugs):
             pass
 
     min_tmax = int(min(tmax_values)) if tmax_values else 'N/A'
-    global_vmin = round(min(vmin_values), 4) if vmin_values else 0
-    global_vmax = round(max(vmax_values), 4) if vmax_values else 100000
+    global_vmin = min(vmin_values) if vmin_values else 0
+    global_vmax = max(vmax_values) if vmax_values else 100000
 
     # Wavelength bounds (inverse of wavenumber)
-    global_wvmin = round(1e7 / global_vmax, 4) if global_vmax > 0 else 0
-    global_wvmax = round(1e7 / global_vmin, 4) if global_vmin > 0 else 100000
+    global_wvmin = floor_to_decimal(1e7 / global_vmax, 6) if global_vmax > 0 else 0
+    global_wvmax = ceil_to_decimal(1e7 / global_vmin, 6) if global_vmin > 0 else 100000
 
     c = {
         "selected_isos": selected_isos,
         "min_tmax": min_tmax,
-        "global_vmin": global_vmin,
-        "global_vmax": global_vmax,
-        "global_wvmin": global_wvmin,
-        "global_wvmax": global_wvmax,
+        "global_vmin": f"{global_vmin:.6f}",
+        "global_vmax": f"{global_vmax:.6f}",
+        "global_wvmin": f"{global_wvmin:.6f}",
+        "global_wvmax": f"{global_wvmax:.6f}",
     }
     return render(request, "linelist/dofilters.html", c)
 
@@ -389,8 +400,8 @@ def get_data(request):
                 "request_cost": f"{request_cost:.0f}",
                 "max_isos": MAX_ISOS_HARD,
                 "cost_limit": REQUEST_COST_LIMIT,
-                "numin": f"{numin:.4f}",
-                "numax": f"{numax:.4f}",
+                "numin": f"{numin:.6f}",
+                "numax": f"{numax:.6f}",
             },
             status=400
         )
@@ -411,10 +422,10 @@ def get_data(request):
         "nlines": f"{nlines:,}",
         "Smin": Smin,
         "T": int(T),
-        "numin": numin,
-        "numax": numax,
-        "wvmin": wvmin if select_by_wavelength else None,
-        "wvmax": wvmax if select_by_wavelength else None,
+        "numin": f"{numin:.6f}",
+        "numax": f"{numax:.6f}",
+        "wvmin": f"{wvmin:.6f}" if select_by_wavelength else None,
+        "wvmax": f"{wvmax:.6f}" if select_by_wavelength else None,
         "archive_name": archive_name,
         "archive_size": archive_size,
         "select_by_wavelength": select_by_wavelength,

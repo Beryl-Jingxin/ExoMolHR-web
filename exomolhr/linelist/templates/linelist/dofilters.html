@@ -4,6 +4,18 @@
 <script>
     var select_by_wavelength = false;
 
+    function floorTo6(value) {
+        return Math.floor(value * 1e6) / 1e6;
+    }
+
+    function ceilTo6(value) {
+        return Math.ceil(value * 1e6) / 1e6;
+    }
+
+    function parseFilterNumber(value) {
+        return parseFloat(String(value).replace(/[≥≤\s]/g, ''));
+    }
+
     function toggle_wavenumber_wavelength() {
         var toggleTrack = document.getElementById('toggleTrack');
         var nuLabel = document.getElementById('nuLabel');
@@ -28,14 +40,14 @@
 
             document.getElementById("numin").disabled = false;
             document.getElementById("numax").disabled = false;
-            var wvmin = document.getElementById("wvmin").value.trim();
+            var wvmin = parseFilterNumber(document.getElementById("wvmin").value);
             var numax = 1.e7 / wvmin;
             if (!isFinite(numax)) { numax = ''; }
-            document.getElementById("numax").value = numax;
-            var wvmax = document.getElementById("wvmax").value.trim();
+            document.getElementById("numax").value = numax === '' ? '' : numax.toFixed(6);
+            var wvmax = parseFilterNumber(document.getElementById("wvmax").value);
             var numin = 1.e7 / wvmax;
             if (!isFinite(numin)) { numin = 0; }
-            document.getElementById("numin").value = numin;
+            document.getElementById("numin").value = numin.toFixed(6);
             document.getElementById("wvmin").disabled = true;
             document.getElementById("wvmax").disabled = true;
 
@@ -62,14 +74,14 @@
 
             document.getElementById("wvmin").disabled = false;
             document.getElementById("wvmax").disabled = false;
-            var numin2 = document.getElementById("numin").value.trim();
+            var numin2 = parseFilterNumber(document.getElementById("numin").value);
             var wvmax2 = 1.e7 / numin2;
             if (!isFinite(wvmax2)) { wvmax2 = ''; }
-            document.getElementById("wvmax").value = wvmax2;
-            var numax2 = document.getElementById("numax").value.trim();
+            document.getElementById("wvmax").value = wvmax2 === '' ? '' : ceilTo6(wvmax2).toFixed(6);
+            var numax2 = parseFilterNumber(document.getElementById("numax").value);
             var wvmin2 = 1.e7 / numax2;
             if (!isFinite(wvmin2)) { wvmin2 = 0; }
-            document.getElementById("wvmin").value = wvmin2;
+            document.getElementById("wvmin").value = floorTo6(wvmin2).toFixed(6);
             document.getElementById("numin").disabled = true;
             document.getElementById("numax").disabled = true;
 
@@ -191,11 +203,6 @@
         height: 32px;
         box-sizing: border-box;
     }
-    .iso-table thead th:first-child {
-        text-align: left;
-        padding-left: 14px;
-        border-top-left-radius: 12px;
-    }
     .iso-table thead th:last-child {
         /* keeping sticky position */
     }
@@ -266,10 +273,6 @@
         text-align: center;
         vertical-align: middle;
     }
-    .iso-table tbody td:first-child {
-        text-align: left;
-        padding-left: 14px;
-    }
     .iso-table .td-formula {
         font-weight: 600;
         color: #2c3e50;
@@ -297,7 +300,7 @@
     .vrange-min {
     }
     .vrange-dash {
-        text-align: right;
+        text-align: center;
     }
     .vrange-max-wrapper {
         text-align: right;
@@ -876,8 +879,8 @@
                         <div class="dual-range-container">
                             <div class="slider-track-bg"></div>
                             <div class="slider-track-fill" id="nuTrackFill"></div>
-                            <input type="range" id="nuSliderMin" min="{{ global_vmin }}" max="{{ global_vmax }}" value="{{ global_vmin }}" step="0.1">
-                            <input type="range" id="nuSliderMax" min="{{ global_vmin }}" max="{{ global_vmax }}" value="{{ global_vmax }}" step="0.1">
+                            <input type="range" id="nuSliderMin" min="{{ global_vmin }}" max="{{ global_vmax }}" value="{{ global_vmin }}" step="0.000001">
+                            <input type="range" id="nuSliderMax" min="{{ global_vmin }}" max="{{ global_vmax }}" value="{{ global_vmax }}" step="0.000001">
                         </div>
                     </div>
                     <div class="filter-row">
@@ -902,8 +905,8 @@
                         <div class="dual-range-container">
                             <div class="slider-track-bg"></div>
                             <div class="slider-track-fill" id="wvTrackFill"></div>
-                            <input type="range" id="wvSliderMin" step="0.1">
-                            <input type="range" id="wvSliderMax" step="0.1">
+                            <input type="range" id="wvSliderMin" step="0.000001">
+                            <input type="range" id="wvSliderMax" step="0.000001">
                         </div>
                     </div>
                     <div class="filter-row">
@@ -953,6 +956,8 @@ document.addEventListener("DOMContentLoaded", function() {
     // ===== Global State =====
     var globalVmin = {{ global_vmin }};
     var globalVmax = {{ global_vmax }};
+    var globalWvmin = {{ global_wvmin }};
+    var globalWvmax = {{ global_wvmax }};
     var minTmax = {{ min_tmax }};
 
     // Sorting is inherited from the Django queryset order (same as isotopologues page)
@@ -982,7 +987,7 @@ document.addEventListener("DOMContentLoaded", function() {
         if (parseFloat(nuSliderMin.value) > parseFloat(nuSliderMax.value)) {
             nuSliderMin.value = nuSliderMax.value;
         }
-        numinInput.value = parseFloat(nuSliderMin.value).toFixed(2);
+        numinInput.value = parseFloat(nuSliderMin.value).toFixed(6);
         numinInput.classList.add('has-input');
         updateNuTrackFill();
     });
@@ -990,7 +995,7 @@ document.addEventListener("DOMContentLoaded", function() {
         if (parseFloat(nuSliderMax.value) < parseFloat(nuSliderMin.value)) {
             nuSliderMax.value = nuSliderMin.value;
         }
-        numaxInput.value = parseFloat(nuSliderMax.value).toFixed(2);
+        numaxInput.value = parseFloat(nuSliderMax.value).toFixed(6);
         numaxInput.classList.add('has-input');
         updateNuTrackFill();
     });
@@ -1000,7 +1005,7 @@ document.addEventListener("DOMContentLoaded", function() {
         if (!isNaN(val)) {
             val = Math.max(parseFloat(nuSliderMin.min), Math.min(val, parseFloat(nuSliderMax.value)));
             nuSliderMin.value = val;
-            this.value = val;
+            this.value = val.toFixed(6);
             updateNuTrackFill();
         }
     });
@@ -1009,7 +1014,7 @@ document.addEventListener("DOMContentLoaded", function() {
         if (!isNaN(val)) {
             val = Math.min(parseFloat(nuSliderMax.max), Math.max(val, parseFloat(nuSliderMin.value)));
             nuSliderMax.value = val;
-            this.value = val;
+            this.value = val.toFixed(6);
             updateNuTrackFill();
         }
     });
@@ -1026,16 +1031,16 @@ document.addEventListener("DOMContentLoaded", function() {
     var wvBoundsDisplay = document.getElementById('wvBoundsDisplay');
 
     // Wavelength bounds are inverse of wavenumber bounds
-    var wvLower = globalVmax > 0 ? (1e7 / globalVmax) : 0;
-    var wvUpper = globalVmin > 0 ? (1e7 / globalVmin) : 100000;
+    var wvLower = globalWvmin;
+    var wvUpper = globalWvmax;
 
-    wvSliderMin.min = wvLower.toFixed(2);
-    wvSliderMin.max = wvUpper.toFixed(2);
-    wvSliderMin.value = wvLower.toFixed(2);
-    wvSliderMax.min = wvLower.toFixed(2);
-    wvSliderMax.max = wvUpper.toFixed(2);
-    wvSliderMax.value = wvUpper.toFixed(2);
-    wvBoundsDisplay.textContent = wvLower.toFixed(2) + ' – ' + wvUpper.toFixed(2);
+    wvSliderMin.min = wvLower.toFixed(6);
+    wvSliderMin.max = wvUpper.toFixed(6);
+    wvSliderMin.value = wvLower.toFixed(6);
+    wvSliderMax.min = wvLower.toFixed(6);
+    wvSliderMax.max = wvUpper.toFixed(6);
+    wvSliderMax.value = wvUpper.toFixed(6);
+    wvBoundsDisplay.textContent = wvLower.toFixed(6) + ' – ' + wvUpper.toFixed(6);
 
     function updateWvTrackFill() {
         var min = parseFloat(wvSliderMin.value);
@@ -1055,7 +1060,7 @@ document.addEventListener("DOMContentLoaded", function() {
         if (parseFloat(wvSliderMin.value) > parseFloat(wvSliderMax.value)) {
             wvSliderMin.value = wvSliderMax.value;
         }
-        wvminInput.value = parseFloat(wvSliderMin.value).toFixed(2);
+        wvminInput.value = parseFloat(wvSliderMin.value).toFixed(6);
         wvminInput.classList.add('has-input');
         updateWvTrackFill();
     });
@@ -1063,7 +1068,7 @@ document.addEventListener("DOMContentLoaded", function() {
         if (parseFloat(wvSliderMax.value) < parseFloat(wvSliderMin.value)) {
             wvSliderMax.value = wvSliderMin.value;
         }
-        wvmaxInput.value = parseFloat(wvSliderMax.value).toFixed(2);
+        wvmaxInput.value = parseFloat(wvSliderMax.value).toFixed(6);
         wvmaxInput.classList.add('has-input');
         updateWvTrackFill();
     });
@@ -1073,7 +1078,7 @@ document.addEventListener("DOMContentLoaded", function() {
         if (!isNaN(val)) {
             val = Math.max(parseFloat(wvSliderMin.min), Math.min(val, parseFloat(wvSliderMax.value)));
             wvSliderMin.value = val;
-            this.value = val;
+            this.value = val.toFixed(6);
             updateWvTrackFill();
         }
     });
@@ -1082,7 +1087,7 @@ document.addEventListener("DOMContentLoaded", function() {
         if (!isNaN(val)) {
             val = Math.min(parseFloat(wvSliderMax.max), Math.max(val, parseFloat(wvSliderMin.value)));
             wvSliderMax.value = val;
-            this.value = val;
+            this.value = val.toFixed(6);
             updateWvTrackFill();
         }
     });
@@ -1161,23 +1166,31 @@ document.addEventListener("DOMContentLoaded", function() {
 
 // ===== Reset Form =====
 function resetForm() {
+    // Switch back before resetting values so the toggle conversion does not
+    // overwrite the default wavenumber bounds.
+    if (select_by_wavelength) {
+        toggle_wavenumber_wavelength();
+    }
+
     var globalVmin = {{ global_vmin }};
     var globalVmax = {{ global_vmax }};
+    var globalWvmin = {{ global_wvmin }};
+    var globalWvmax = {{ global_wvmax }};
     var origMinTmax = {{ min_tmax }};
 
     // Reset wavenumber inputs
-    document.getElementById('numin').value = globalVmin;
-    document.getElementById('numax').value = globalVmax;
+    document.getElementById('numin').value = globalVmin.toFixed(6);
+    document.getElementById('numax').value = globalVmax.toFixed(6);
     document.getElementById('nuSliderMin').value = globalVmin;
     document.getElementById('nuSliderMax').value = globalVmax;
 
     // Reset wavelength inputs
-    var wvLower = globalVmax > 0 ? (1e7 / globalVmax) : 0;
-    var wvUpper = globalVmin > 0 ? (1e7 / globalVmin) : 100000;
-    document.getElementById('wvmin').value = '0';
-    document.getElementById('wvmax').value = '';
-    document.getElementById('wvSliderMin').value = wvLower.toFixed(2);
-    document.getElementById('wvSliderMax').value = wvUpper.toFixed(2);
+    var wvLower = globalWvmin;
+    var wvUpper = globalWvmax;
+    document.getElementById('wvmin').value = wvLower.toFixed(6);
+    document.getElementById('wvmax').value = wvUpper.toFixed(6);
+    document.getElementById('wvSliderMin').value = wvLower.toFixed(6);
+    document.getElementById('wvSliderMax').value = wvUpper.toFixed(6);
 
     // Reset T and Smin
     document.getElementById('T').value = '296';
@@ -1229,10 +1242,6 @@ function resetForm() {
         }
     });
 
-    // Reset toggle to wavenumber if currently on wavelength
-    if (select_by_wavelength) {
-        toggle_wavenumber_wavelength();
-    }
 }
 
 // ===== Toggle Isotopologue Row =====
