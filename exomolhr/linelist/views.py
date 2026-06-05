@@ -1,5 +1,6 @@
 from decimal import Decimal, ROUND_CEILING, ROUND_FLOOR
 from itertools import cycle
+from pathlib import Path
 from zipfile import ZipFile
 from django.shortcuts import redirect, render
 
@@ -29,6 +30,64 @@ from news.models import SiteUpdate
 from .utils import make_decimal_timestamp, make_zip_bundle
 
 
+DOWNLOAD_COUNT_BASELINE = 10000
+
+def get_download_counter_path():
+    configured_path = getattr(settings, "DOWNLOAD_COUNTER_FILE", None)
+    if configured_path:
+        return Path(configured_path)
+    res_dir = getattr(settings, "RES_DIR", None)
+    if res_dir:
+        return Path(res_dir) / "download_count.txt"
+    production_res_dir = Path("/mnt/data/exomolhr/exomolhr_data/res")
+    if production_res_dir.exists():
+        return production_res_dir / "download_count.txt"
+    return settings.BASE_DIR / "download_count.txt"
+
+
+def update_download_count(increment=0):
+    try:
+        import fcntl
+
+        if increment is True:
+            increment = 1
+        elif increment is False:
+            increment = 0
+        else:
+            increment = max(0, int(increment))
+
+        counter_path = get_download_counter_path()
+        counter_path.parent.mkdir(parents=True, exist_ok=True)
+        with open(counter_path, "a+", encoding="utf-8") as f:
+            fcntl.flock(f.fileno(), fcntl.LOCK_EX)
+            f.seek(0)
+            raw_count = f.read().strip()
+            try:
+                count = int(raw_count) if raw_count else DOWNLOAD_COUNT_BASELINE
+            except ValueError:
+                count = DOWNLOAD_COUNT_BASELINE
+
+            if increment:
+                count += increment
+                f.seek(0)
+                f.truncate()
+                f.write(str(count))
+                f.flush()
+
+            fcntl.flock(f.fileno(), fcntl.LOCK_UN)
+            return count
+    except OSError:
+        return DOWNLOAD_COUNT_BASELINE
+
+
+def count_csv_files_in_archive(file_path):
+    try:
+        with ZipFile(file_path, "r") as archive:
+            return sum(1 for name in archive.namelist() if name.lower().endswith(".csv"))
+    except Exception:
+        return 1
+
+
 def floor_to_decimal(value, places=6):
     step = Decimal("1").scaleb(-places)
     return float(Decimal(str(value)).quantize(step, rounding=ROUND_FLOOR))
@@ -46,6 +105,7 @@ def home(request):
         'total_lines': f"{int(df['HR N lines'].sum()):,}",
         'num_iso': df['iso-slug'].count(),
         'num_mol': len(df['molecule'].drop_duplicates()),
+        'download_count': f"{update_download_count():,}",
         'recent_updates': recent_updates
     }
     return render(request, "linelist/home.html", context)
@@ -164,9 +224,14 @@ def about(request):
     context = {
         'total_lines': f"{int(df['HR N lines'].sum()):,}",
         'num_iso': df['iso-slug'].count(),
-        'num_mol': len(df['molecule'].drop_duplicates())
+        'num_mol': len(df['molecule'].drop_duplicates()),
+        'download_count': f"{update_download_count():,}",
     }
     return render(request, "linelist/about.html", context)
+
+
+def download_count(request):
+    return JsonResponse({"count": update_download_count()})
 
 
 def api(request):
@@ -241,6 +306,7 @@ def view_pf(request, pf_filename):
             content = f.read()
     except Exception as e:
         raise Http404(f"Error reading file: {e}")
+    update_download_count(increment=True)
     return HttpResponse(content, content_type="text/plain; charset=utf-8")
 
 
@@ -266,6 +332,9 @@ def download_csv(request, csv_filename):
         # .csv should be downloaded directly (as_attachment=True)
         is_inline = any(safe_filename.endswith(ext) for ext in ['.json', '.pf'])
         as_attachment = not is_inline
+
+        if as_attachment:
+            update_download_count(increment=True)
         
         return FileResponse(open(file_path, "rb"), content_type=content_type, as_attachment=as_attachment, filename=safe_filename)
     else:
@@ -444,6 +513,7 @@ def download_archive(request):
     file_path = settings.RESULTS_DIR / archive_name
     
     if file_path.exists():
+        update_download_count(increment=count_csv_files_in_archive(file_path))
         return FileResponse(open(file_path, "rb"), as_attachment=True, filename=archive_name)
     else:
         raise Http404("File not found in results directory.")

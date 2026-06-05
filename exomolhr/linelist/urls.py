@@ -7,6 +7,7 @@ urlpatterns = [
     path("", views.home, name="home"),
     path("qn/", views.qnlabel, name="qnlabel"),
     path("about/", views.about, name="about"),
+    path("about/download-count/", views.download_count, name="download_count"),
     path("api/", views.api, name="api"),
     path("citation/", views.citation, name="citation"),
     path("updates/", views.updates, name="updates"),

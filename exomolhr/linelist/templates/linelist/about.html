@@ -3,8 +3,8 @@
 {% block content %}
 <style>
   .about-wrap {
-    max-width: 850px;
-    margin: 3rem auto 3rem;
+    max-width: 1100px;
+    margin: 2.2rem auto 3rem;
     padding: 0 1rem;
     gap: 3rem;
   }
@@ -57,7 +57,7 @@
     display: grid;
     grid-template-columns: repeat(2, minmax(0, 1fr));
     gap: 1.25rem;
-    margin-bottom: 3rem;
+    margin-bottom: 0;
   }
 
   .stat-card {
@@ -153,6 +153,122 @@
     background: linear-gradient(180deg, transparent 0%, #b7d3dc 18%, #b7d3dc 82%, transparent 100%);
   }
 
+  .metrics-showcase {
+    display: grid;
+    grid-template-columns: minmax(0, 1.18fr) minmax(280px, 0.82fr);
+    gap: 1.35rem;
+    align-items: stretch;
+    margin-bottom: 3rem;
+  }
+
+  .download-metric {
+    position: relative;
+    min-height: 100%;
+    padding: 1.45rem;
+    border: 1px solid #cfe4eb;
+    border-radius: 20px;
+    background:
+      radial-gradient(circle at 92% 12%, rgba(119, 186, 183, 0.24), transparent 34%),
+      linear-gradient(145deg, #c7d987 0%, #9acda2 30%, #7dabdd 70%, #9499d5 100%);
+    box-shadow: 0 18px 42px rgba(21, 49, 79, 0.16);
+    overflow: hidden;
+    color: #fff;
+  }
+
+  .download-metric::before {
+    content: "";
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(110deg, transparent 0%, rgba(255,255,255,0.72) 42%, transparent 58%);
+    transform: translateX(-100%);
+    animation: metricSweep 4.8s ease-in-out infinite;
+    pointer-events: none;
+  }
+
+  .download-metric-inner {
+    position: relative;
+    min-height: 100%;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    gap: 1.5rem;
+  }
+
+  .download-kicker {
+    color: rgba(255, 255, 255, 0.78);
+    font-size: 0.78rem;
+    font-weight: 800;
+    line-height: 1.2;
+    letter-spacing: 0.9px;
+    text-transform: uppercase;
+    margin-bottom: 0.32rem;
+  }
+
+  .download-title {
+    color: #fff;
+    font-size: clamp(1.35rem, 3vw, 1.85rem);
+    font-weight: 800;
+    margin: 0;
+    line-height: 1.22;
+  }
+
+  .download-copy {
+    color: rgba(255, 255, 255, 0.82);
+    margin: 0.65rem 0 0;
+    line-height: 1.45;
+  }
+
+  .download-count {
+    width: 100%;
+    min-height: 132px;
+    padding: 1.15rem 1.2rem;
+    border: 1px solid rgba(255, 255, 255, 0.34);
+    border-radius: 18px;
+    background: rgba(255, 255, 255, 0.16);
+    color: #ffffff;
+    text-align: center;
+    box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.24), 0 14px 28px rgba(21, 49, 79, 0.18);
+    backdrop-filter: blur(8px);
+    transform: translateZ(0);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+  }
+
+  .download-number {
+    display: block;
+    font-size: clamp(2rem, 5vw, 2.8rem);
+    font-weight: 900;
+    line-height: 1;
+    font-variant-numeric: tabular-nums;
+  }
+
+  .download-label {
+    display: block;
+    margin-top: 0.55rem;
+    font-size: 0.78rem;
+    font-weight: 800;
+    letter-spacing: 0.9px;
+    text-transform: uppercase;
+    color: rgba(255, 255, 255, 0.86);
+  }
+
+  .download-pulse {
+    animation: downloadPulse 0.75s ease;
+  }
+
+  @keyframes metricSweep {
+    0%, 48% { transform: translateX(-100%); }
+    72%, 100% { transform: translateX(100%); }
+  }
+
+  @keyframes downloadPulse {
+    0% { transform: scale(1); }
+    42% { transform: scale(1.035); }
+    100% { transform: scale(1); }
+  }
+
   @media (max-width: 768px) {
     .about-wrap {
       margin-top: 1.25rem;
@@ -169,6 +285,11 @@
     }
 
     .stats-grid {
+      grid-template-columns: 1fr;
+      gap: 1rem;
+    }
+
+    .metrics-showcase {
       grid-template-columns: 1fr;
       gap: 1rem;
     }
@@ -193,13 +314,18 @@
       height: 1px;
       background: linear-gradient(90deg, transparent 0%, #b7d3dc 18%, #b7d3dc 82%, transparent 100%);
     }
+
+    .download-count {
+      min-width: 0;
+      width: 100%;
+    }
   }
 </style>
 
 <div class="about-wrap">
     <div class="about-header">
       <h1 class="about-title">Welcome to ExoMolHR</h1>
-      <p class="about-subtitle">Empirical High-Resolution Molecular Spectrum <br> Database and Calculator</p>
+      <p class="about-subtitle">Empirical High-Resolution Molecular Spectrum Database and Calculator</p>
     </div>
 
     <div class="about-card">
@@ -242,18 +368,33 @@
             </div>
 
             <h4 class="text-center fw-bold text-secondary mb-4">Current Database Statistics</h4>
-            <div class="stats-grid">
-                <div class="stat-card transition-hover" style="background: #9acda2;">
-                    <div class="stat-number">{{ num_mol }}</div>
-                    <div class="stat-label">Molecules</div>
+            <div class="metrics-showcase">
+                <div class="stats-grid">
+                    <div class="stat-card transition-hover" style="background: #9acda2;">
+                        <div class="stat-number">{{ num_mol }}</div>
+                        <div class="stat-label">Molecules</div>
+                    </div>
+                    <div class="stat-card transition-hover" style="background: #78c891;">
+                        <div class="stat-number">{{ num_iso }}</div>
+                        <div class="stat-label">Isotopologues</div>
+                    </div>
+                    <div class="stat-card stat-card-lines transition-hover" style="background: #77bab7;">
+                        <div class="stat-number">{{ total_lines }}</div>
+                        <div class="stat-label">Total Spectral Lines</div>
+                    </div>
                 </div>
-                <div class="stat-card transition-hover" style="background: #78c891;">
-                    <div class="stat-number">{{ num_iso }}</div>
-                    <div class="stat-label">Isotopologues</div>
-                </div>
-                <div class="stat-card stat-card-lines transition-hover" style="background: #77bab7;">
-                    <div class="stat-number">{{ total_lines }}</div>
-                    <div class="stat-label">Total Spectral Lines</div>
+
+                <div class="download-metric transition-hover">
+                    <div class="download-metric-inner">
+                        <div>
+                            <div class="download-kicker">Live platform usage</div>
+                            <h4 class="download-title">Downloads</h4>
+                        </div>
+                        <div class="download-count" id="downloadCountCard">
+                            <span class="download-number" id="downloadCount" data-count="{{ download_count }}">{{ download_count }}</span>
+                            <span class="download-label">Downloaded files</span>
+                        </div>
+                    </div>
                 </div>
             </div>
 
@@ -269,5 +410,59 @@
         </div>
     </div>
 </div>
+
+<script>
+  document.addEventListener("DOMContentLoaded", function() {
+    var countEl = document.getElementById("downloadCount");
+    var countCard = document.getElementById("downloadCountCard");
+    if (!countEl) return;
+
+    function parseCount(value) {
+      return parseInt(String(value).replace(/,/g, ""), 10) || 0;
+    }
+
+    function formatCount(value) {
+      return value.toLocaleString("en-US");
+    }
+
+    function animateCount(target) {
+      var start = parseCount(countEl.textContent);
+      var diff = target - start;
+      if (diff === 0) return;
+
+      var duration = 700;
+      var startTime = null;
+      countCard.classList.remove("download-pulse");
+
+      function tick(timestamp) {
+        if (!startTime) startTime = timestamp;
+        var progress = Math.min((timestamp - startTime) / duration, 1);
+        var eased = 1 - Math.pow(1 - progress, 3);
+        countEl.textContent = formatCount(Math.round(start + diff * eased));
+        if (progress < 1) {
+          requestAnimationFrame(tick);
+        } else {
+          countEl.textContent = formatCount(target);
+          countCard.classList.add("download-pulse");
+        }
+      }
+
+      requestAnimationFrame(tick);
+    }
+
+    function refreshDownloadCount() {
+      fetch("{% url 'linelist:download_count' %}", { headers: { "Accept": "application/json" } })
+        .then(function(response) { return response.ok ? response.json() : null; })
+        .then(function(data) {
+          if (data && typeof data.count === "number") {
+            animateCount(data.count);
+          }
+        })
+        .catch(function() {});
+    }
+
+    setInterval(refreshDownloadCount, 15000);
+  });
+</script>
 
 {% endblock %}
