@@ -1,6 +1,7 @@
 from decimal import Decimal, ROUND_CEILING, ROUND_FLOOR
 from itertools import cycle
 from pathlib import Path
+from threading import Lock
 from zipfile import ZipFile
 from django.shortcuts import redirect, render
 
@@ -32,6 +33,7 @@ from .utils import make_decimal_timestamp, make_zip_bundle
 
 
 logger = logging.getLogger(__name__)
+download_counter_lock = Lock()
 
 
 def log_download_counter_debug(message, *args):
@@ -48,8 +50,6 @@ def get_download_counter_path():
 
 def update_download_count(increment=0):
     try:
-        import fcntl
-
         if increment is True:
             increment = 1
         elif increment is False:
@@ -66,25 +66,23 @@ def update_download_count(increment=0):
             os.access(counter_path, os.R_OK),
             os.access(counter_path, os.W_OK),
         )
-        with open(counter_path, "r+", encoding="utf-8") as f:
-            fcntl.flock(f.fileno(), fcntl.LOCK_EX)
-            f.seek(0)
-            raw_count = f.read().strip()
-            log_download_counter_debug("raw_count=%r", raw_count)
-            count = int(raw_count)
+        with download_counter_lock:
+            with open(counter_path, "r+", encoding="utf-8") as f:
+                raw_count = f.read().strip()
+                log_download_counter_debug("raw_count=%r", raw_count)
+                count = int(raw_count)
 
-            if increment:
-                count += increment
-                f.seek(0)
-                f.truncate()
-                f.write(str(count))
-                f.flush()
-                log_download_counter_debug("wrote count=%s increment=%s", count, increment)
-            else:
-                log_download_counter_debug("read count=%s", count)
+                if increment:
+                    count += increment
+                    f.seek(0)
+                    f.truncate()
+                    f.write(str(count))
+                    f.flush()
+                    log_download_counter_debug("wrote count=%s increment=%s", count, increment)
+                else:
+                    log_download_counter_debug("read count=%s", count)
 
-            fcntl.flock(f.fileno(), fcntl.LOCK_UN)
-            return count
+                return count
     except Exception:
         logger.exception("Unable to update download counter at %s", get_download_counter_path())
         raise
