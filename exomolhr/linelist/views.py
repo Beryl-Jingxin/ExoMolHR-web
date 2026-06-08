@@ -34,6 +34,12 @@ from .utils import make_decimal_timestamp, make_zip_bundle
 DOWNLOAD_COUNT_BASELINE = 10000
 logger = logging.getLogger(__name__)
 
+
+def log_download_counter_debug(message, *args):
+    if getattr(settings, "DOWNLOAD_COUNTER_DEBUG", False):
+        logger.warning("download_counter: " + message, *args)
+
+
 def get_download_counter_path():
     configured_path = getattr(settings, "DOWNLOAD_COUNTER_FILE", None)
     if configured_path:
@@ -53,14 +59,29 @@ def update_download_count(increment=0):
             increment = max(0, int(increment))
 
         counter_path = get_download_counter_path()
+        log_download_counter_debug(
+            "start increment=%s path=%s exists=%s readable=%s writable=%s",
+            increment,
+            counter_path,
+            counter_path.exists(),
+            os.access(counter_path, os.R_OK),
+            os.access(counter_path, os.W_OK),
+        )
         counter_path.parent.mkdir(parents=True, exist_ok=True)
         with open(counter_path, "a+", encoding="utf-8") as f:
             fcntl.flock(f.fileno(), fcntl.LOCK_EX)
             f.seek(0)
             raw_count = f.read().strip()
+            log_download_counter_debug("raw_count=%r", raw_count)
             try:
                 count = int(raw_count) if raw_count else DOWNLOAD_COUNT_BASELINE
             except ValueError:
+                logger.warning(
+                    "download_counter: invalid raw count %r at %s; using baseline %s",
+                    raw_count,
+                    counter_path,
+                    DOWNLOAD_COUNT_BASELINE,
+                )
                 count = DOWNLOAD_COUNT_BASELINE
 
             if increment:
@@ -69,6 +90,9 @@ def update_download_count(increment=0):
                 f.truncate()
                 f.write(str(count))
                 f.flush()
+                log_download_counter_debug("wrote count=%s increment=%s", count, increment)
+            else:
+                log_download_counter_debug("read count=%s", count)
 
             fcntl.flock(f.fileno(), fcntl.LOCK_UN)
             return count
