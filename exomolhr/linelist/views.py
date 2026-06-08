@@ -36,11 +36,6 @@ logger = logging.getLogger(__name__)
 download_counter_lock = Lock()
 
 
-def log_download_counter_debug(message, *args):
-    if getattr(settings, "DOWNLOAD_COUNTER_DEBUG", False):
-        logger.warning("download_counter: " + message, *args)
-
-
 def get_download_counter_path():
     configured_path = getattr(settings, "DOWNLOAD_COUNTER_FILE", None)
     if configured_path:
@@ -58,18 +53,9 @@ def update_download_count(increment=0):
             increment = max(0, int(increment))
 
         counter_path = get_download_counter_path()
-        log_download_counter_debug(
-            "start increment=%s path=%s exists=%s readable=%s writable=%s",
-            increment,
-            counter_path,
-            counter_path.exists(),
-            os.access(counter_path, os.R_OK),
-            os.access(counter_path, os.W_OK),
-        )
         with download_counter_lock:
             with open(counter_path, "r+", encoding="utf-8") as f:
                 raw_count = f.read().strip()
-                log_download_counter_debug("raw_count=%r", raw_count)
                 count = int(raw_count)
 
                 if increment:
@@ -78,9 +64,6 @@ def update_download_count(increment=0):
                     f.truncate()
                     f.write(str(count))
                     f.flush()
-                    log_download_counter_debug("wrote count=%s increment=%s", count, increment)
-                else:
-                    log_download_counter_debug("read count=%s", count)
 
                 return count
     except Exception:
