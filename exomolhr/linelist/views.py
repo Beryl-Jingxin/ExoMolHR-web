@@ -38,13 +38,7 @@ def get_download_counter_path():
     configured_path = getattr(settings, "DOWNLOAD_COUNTER_FILE", None)
     if configured_path:
         return Path(configured_path)
-    res_dir = getattr(settings, "RES_DIR", None)
-    if res_dir:
-        return Path(res_dir) / "download_count.txt"
-    production_res_dir = Path("/mnt/data/exomolhr/exomolhr_data/res")
-    if production_res_dir.exists():
-        return production_res_dir / "download_count.txt"
-    return settings.BASE_DIR / "download_count.txt"
+    return Path(settings.RES_DIR) / "download_count.txt"
 
 
 def update_download_count(increment=0):
