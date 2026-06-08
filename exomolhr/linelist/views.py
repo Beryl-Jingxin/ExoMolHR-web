@@ -31,7 +31,6 @@ from news.models import SiteUpdate
 from .utils import make_decimal_timestamp, make_zip_bundle
 
 
-DOWNLOAD_COUNT_BASELINE = 10000
 logger = logging.getLogger(__name__)
 
 
@@ -67,22 +66,12 @@ def update_download_count(increment=0):
             os.access(counter_path, os.R_OK),
             os.access(counter_path, os.W_OK),
         )
-        counter_path.parent.mkdir(parents=True, exist_ok=True)
-        with open(counter_path, "a+", encoding="utf-8") as f:
+        with open(counter_path, "r+", encoding="utf-8") as f:
             fcntl.flock(f.fileno(), fcntl.LOCK_EX)
             f.seek(0)
             raw_count = f.read().strip()
             log_download_counter_debug("raw_count=%r", raw_count)
-            try:
-                count = int(raw_count) if raw_count else DOWNLOAD_COUNT_BASELINE
-            except ValueError:
-                logger.warning(
-                    "download_counter: invalid raw count %r at %s; using baseline %s",
-                    raw_count,
-                    counter_path,
-                    DOWNLOAD_COUNT_BASELINE,
-                )
-                count = DOWNLOAD_COUNT_BASELINE
+            count = int(raw_count)
 
             if increment:
                 count += increment
@@ -96,9 +85,9 @@ def update_download_count(increment=0):
 
             fcntl.flock(f.fileno(), fcntl.LOCK_UN)
             return count
-    except OSError:
+    except Exception:
         logger.exception("Unable to update download counter at %s", get_download_counter_path())
-        return DOWNLOAD_COUNT_BASELINE
+        raise
 
 
 def count_csv_files_in_archive(file_path):
