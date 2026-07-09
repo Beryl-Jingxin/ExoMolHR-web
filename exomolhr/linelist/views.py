@@ -149,13 +149,13 @@ def get_isotope_slug_for_plot_filename(iso_slug):
     return str(iso_slug)
 
 
-def make_plot_download_filename(filestem, iso_slugs, T, range_kind, range_min, range_max, unit):
+def make_plot_download_filename(filestem, iso_slugs, T, range_kind, range_min, range_max, unit, plot_kind):
     iso_part = "_".join(get_isotope_slug_for_plot_filename(iso) for iso in iso_slugs)
     range_part = (
         f"{range_kind}{format_plot_range_value(range_min)}-"
         f"{format_plot_range_value(range_max)}{unit}"
     )
-    return f"{filestem}__{iso_part}__{int(T)}K__{range_part}.png"
+    return f"{filestem}__{iso_part}__{int(T)}K__{range_part}__{plot_kind}.png"
 
 
 def make_plot_download_filenames(filestem, iso_slugs, T, numin, numax, range_kind, range_min, range_max):
@@ -167,14 +167,23 @@ def make_plot_download_filenames(filestem, iso_slugs, T, numin, numax, range_kin
         wl_max_nm = 1e7 / float(numin) if float(numin) > 0 else 1e7
 
     return {
-        "wn": make_plot_download_filename(
-            filestem, iso_slugs, T, "wn", numin, numax, "cm-1"
+        "wn_stick": make_plot_download_filename(
+            filestem, iso_slugs, T, "wn", numin, numax, "cm-1", "stick"
         ),
-        "nm": make_plot_download_filename(
-            filestem, iso_slugs, T, "wl", wl_min_nm, wl_max_nm, "nm"
+        "wn_scatter": make_plot_download_filename(
+            filestem, iso_slugs, T, "wn", numin, numax, "cm-1", "scatter"
         ),
-        "um": make_plot_download_filename(
-            filestem, iso_slugs, T, "wl", wl_min_nm / 1000, wl_max_nm / 1000, "um"
+        "nm_stick": make_plot_download_filename(
+            filestem, iso_slugs, T, "wl", wl_min_nm, wl_max_nm, "nm", "stick"
+        ),
+        "nm_scatter": make_plot_download_filename(
+            filestem, iso_slugs, T, "wl", wl_min_nm, wl_max_nm, "nm", "scatter"
+        ),
+        "um_stick": make_plot_download_filename(
+            filestem, iso_slugs, T, "wl", wl_min_nm / 1000, wl_max_nm / 1000, "um", "stick"
+        ),
+        "um_scatter": make_plot_download_filename(
+            filestem, iso_slugs, T, "wl", wl_min_nm / 1000, wl_max_nm / 1000, "um", "scatter"
         ),
     }
 
@@ -838,7 +847,7 @@ def get_bokeh_html(
         range_max,
     )
     default_plot_download_filename = (
-        plot_download_filenames["nm"] if select_by_wavelength else plot_download_filenames["wn"]
+        plot_download_filenames["nm_stick"] if select_by_wavelength else plot_download_filenames["wn_stick"]
     )
 
     # Pre-load data to determine true data bounds for zooming
@@ -1178,7 +1187,8 @@ def get_bokeh_html(
             click_policy="hide",
             glyph_width=25,
             glyph_height=4,
-            label_height=4,
+            label_height=18,
+            label_text_font_size="12pt",
             spacing=14,
             margin=8,
             padding=8,
@@ -1189,6 +1199,7 @@ def get_bokeh_html(
             orientation="horizontal",
             ncols=get_plot_legend_ncols(len(iso_slugs)),
             click_policy="hide",
+            label_text_font_size="12pt",
             spacing=14,
             margin=8,
             padding=8,
@@ -1259,22 +1270,26 @@ def get_bokeh_html(
         wvmin_um=wvmin_um, wvmax_um=wvmax_um,
         save_tool_log=save_tool_log,
         save_tool_lin=save_tool_lin,
-        filename_wn=plot_download_filenames["wn"],
-        filename_nm=plot_download_filenames["nm"],
-        filename_um=plot_download_filenames["um"],
+        filename_wn_stick=plot_download_filenames["wn_stick"],
+        filename_wn_scatter=plot_download_filenames["wn_scatter"],
+        filename_nm_stick=plot_download_filenames["nm_stick"],
+        filename_nm_scatter=plot_download_filenames["nm_scatter"],
+        filename_um_stick=plot_download_filenames["um_stick"],
+        filename_um_scatter=plot_download_filenames["um_scatter"],
     ), code="""
         const unit = cb_obj.value;
-        let saveFilename = filename_wn;
+        const isScatter = save_tool_log.filename.endsWith("__scatter.png");
+        let saveFilename = isScatter ? filename_wn_scatter : filename_wn_stick;
         for (const source of sources) {
             const d = source.data;
             if (unit.startsWith("Wavenumber")) {
                 d['x'] = d['nu'].slice();
             } else if (unit.includes("nm")) {
                 d['x'] = d['wv_nm'].slice();
-                saveFilename = filename_nm;
+                saveFilename = isScatter ? filename_nm_scatter : filename_nm_stick;
             } else {
                 d['x'] = d['wv_um'].slice();
-                saveFilename = filename_um;
+                saveFilename = isScatter ? filename_um_scatter : filename_um_stick;
             }
             source.change.emit();
         }
@@ -1360,10 +1375,18 @@ def get_bokeh_html(
         top_legend_lin=top_legend_lin,
         full_legend_log=full_legend_log,
         full_legend_lin=full_legend_lin,
+        save_tool_log=save_tool_log,
+        save_tool_lin=save_tool_lin,
         renderer_slugs=renderer_slugs,
         renderer_indices=renderer_indices,
         full_limit=FULL_SCATTER_POINT_LIMIT,
         full_force_limit=FULL_SCATTER_FORCE_LIMIT,
+        filename_wn_stick=plot_download_filenames["wn_stick"],
+        filename_wn_scatter=plot_download_filenames["wn_scatter"],
+        filename_nm_stick=plot_download_filenames["nm_stick"],
+        filename_nm_scatter=plot_download_filenames["nm_scatter"],
+        filename_um_stick=plot_download_filenames["um_stick"],
+        filename_um_scatter=plot_download_filenames["um_scatter"],
         log_baseline=max(float(Smin), 1e-35) * 0.5,
     ), code="""
         const unit = x_select.value;
@@ -1399,6 +1422,15 @@ def get_bokeh_html(
         }
 
         full_warning.visible = blocked && isFullScatter;
+        let saveFilename = isFullScatter ? filename_wn_scatter : filename_wn_stick;
+        if (unit.includes("nm")) {
+            saveFilename = isFullScatter ? filename_nm_scatter : filename_nm_stick;
+        } else if (unit.includes("μm")) {
+            saveFilename = isFullScatter ? filename_um_scatter : filename_um_stick;
+        }
+        save_tool_log.filename = saveFilename;
+        save_tool_lin.filename = saveFilename;
+
         top_legend_log.visible = mode === "Top-K Stick Spectra";
         top_legend_lin.visible = mode === "Top-K Stick Spectra";
         full_legend_log.visible = isFullScatter;
