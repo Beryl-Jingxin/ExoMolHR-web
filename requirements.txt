@@ -34,6 +34,7 @@ ptyprocess==0.7.0
 pure-eval==0.2.2
 Pygments==2.18.0
 pyparsing==3.1.2
+pyarrow==15.0.0
 pyqn==1.4.1
 python-dateutil==2.9.0.post0
 pytz==2024.1

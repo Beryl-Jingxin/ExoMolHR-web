@@ -1,5 +1,4 @@
 from decimal import Decimal, ROUND_CEILING, ROUND_FLOOR
-from itertools import cycle
 from pathlib import Path
 from threading import Lock
 from zipfile import ZipFile
@@ -18,11 +17,10 @@ import pandas as pd
 import bokeh.plotting as bp
 from bokeh.plotting import curdoc
 from bokeh.embed import components
-from bokeh.models import ColumnDataSource, Range1d, LogScale, LinearScale, LinearAxis, Select, FixedTicker, BasicTickFormatter
+from bokeh.models import ColumnDataSource, Range1d, LogScale, LinearScale, LinearAxis, Select, FixedTicker, BasicTickFormatter, Div, Legend, LegendItem, SaveTool
 from bokeh.models.callbacks import CustomJS
 from bokeh.models import CustomJSTickFormatter
-from bokeh.layouts import column, row
-from bokeh.palettes import Spectral7
+from bokeh.layouts import column, row, Spacer
 # from bokeh.palettes import Bright
 
 
@@ -34,6 +32,151 @@ from .utils import make_decimal_timestamp, make_zip_bundle
 
 logger = logging.getLogger(__name__)
 download_counter_lock = Lock()
+FULL_SCATTER_POINT_LIMIT = 200000
+FULL_SCATTER_FORCE_LIMIT = 500000
+MAX_POINTS_PER_ISO = 50000
+MAX_TOTAL_PLOT_POINTS = 500000
+TOP_K_PER_BIN = 1
+PLOT_COLOR_STOPS = [
+    "#c5bddf",  # pale purple
+    "#8ea7e2",  # blue
+    "#6fb9e7",  # sky blue
+    "#a3cdc6",  # teal
+    "#8ccd85",  # green
+    "#acde8d",  # yellow green
+    "#ecee77",  # yellow 
+    "#efbc63",  # orange
+]
+PLOT_PRIORITY_COLORS = [
+    "#6fb9e7",  # sky blue
+    "#acde8d",  # yellow green
+    "#ecee77",  # yellow 
+    "#8ccd85",  # green
+    "#8ea7e2",  # blue
+    "#efbc63",  # orange
+    "#a3cdc6",  # teal
+    "#c5bddf",  # pale purple
+]
+
+
+
+def hex_to_rgb(color):
+    color = color.lstrip("#")
+    return tuple(int(color[i:i + 2], 16) for i in (0, 2, 4))
+
+
+def rgb_to_hex(rgb):
+    return "#{:02x}{:02x}{:02x}".format(*rgb)
+
+
+def interpolate_color(stops, position):
+    position = min(1.0, max(0.0, position))
+    scaled = position * (len(stops) - 1)
+    left = int(scaled)
+    right = min(left + 1, len(stops) - 1)
+    fraction = scaled - left
+    left_rgb = hex_to_rgb(stops[left])
+    right_rgb = hex_to_rgb(stops[right])
+    return rgb_to_hex(tuple(
+        round(left_rgb[i] + (right_rgb[i] - left_rgb[i]) * fraction)
+        for i in range(3)
+    ))
+
+
+def contrast_order(count):
+    if count <= 2:
+        return list(range(count))
+    order = []
+    queue = [(0, count - 1)]
+    seen = set()
+    while queue:
+        left, right = queue.pop(0)
+        for idx in (left, right):
+            if idx not in seen:
+                order.append(idx)
+                seen.add(idx)
+        mid = (left + right) // 2
+        if left < mid < right and mid not in seen:
+            order.append(mid)
+            seen.add(mid)
+        if mid - left > 1:
+            queue.append((left, mid))
+        if right - mid > 1:
+            queue.append((mid, right))
+    return order[:count]
+
+
+def get_plot_colors(count):
+    """Return colors that prioritize blue, green, and yellow for small sets."""
+    if count <= 0:
+        return []
+    colors = PLOT_PRIORITY_COLORS[:count]
+    if len(colors) == count:
+        return colors
+
+    sample_count = max(count * 3, len(PLOT_COLOR_STOPS) * 8)
+    sampled = [
+        interpolate_color(PLOT_COLOR_STOPS, i / (sample_count - 1))
+        for i in range(sample_count)
+    ]
+    for idx in contrast_order(sample_count):
+        color = sampled[idx]
+        if color not in colors:
+            colors.append(color)
+        if len(colors) == count:
+            break
+    return colors
+
+
+def get_plot_legend_ncols(count):
+    if count <= 0:
+        return 1
+    if count <= 10:
+        return count
+    if count <= 20:
+        return (count + 1) // 2
+    return (count + 2) // 3
+
+
+def format_plot_range_value(value):
+    return f"{float(value):.6f}"
+
+
+def get_isotope_slug_for_plot_filename(iso_slug):
+    parts = str(iso_slug).split("__")
+    if len(parts) >= 2:
+        return parts[1]
+    return str(iso_slug)
+
+
+def make_plot_download_filename(filestem, iso_slugs, T, range_kind, range_min, range_max, unit):
+    iso_part = "_".join(get_isotope_slug_for_plot_filename(iso) for iso in iso_slugs)
+    range_part = (
+        f"{range_kind}{format_plot_range_value(range_min)}-"
+        f"{format_plot_range_value(range_max)}{unit}"
+    )
+    return f"{filestem}__{iso_part}__{int(T)}K__{range_part}.png"
+
+
+def make_plot_download_filenames(filestem, iso_slugs, T, numin, numax, range_kind, range_min, range_max):
+    if range_kind == "wl":
+        wl_min_nm = float(range_min)
+        wl_max_nm = float(range_max)
+    else:
+        wl_min_nm = 1e7 / float(numax) if float(numax) > 0 else 0
+        wl_max_nm = 1e7 / float(numin) if float(numin) > 0 else 1e7
+
+    return {
+        "wn": make_plot_download_filename(
+            filestem, iso_slugs, T, "wn", numin, numax, "cm-1"
+        ),
+        "nm": make_plot_download_filename(
+            filestem, iso_slugs, T, "wl", wl_min_nm, wl_max_nm, "nm"
+        ),
+        "um": make_plot_download_filename(
+            filestem, iso_slugs, T, "wl", wl_min_nm / 1000, wl_max_nm / 1000, "um"
+        ),
+    }
 
 
 def get_download_counter_path():
@@ -242,6 +385,7 @@ def exomolhr_all_json(request):
     master_path = settings.RES_DIR / "exomolhr.all.json"
     if not master_path.exists():
         raise Http404("exomolhr.all.json not found")
+    update_download_count(increment=True)
     return FileResponse(open(master_path, "rb"),content_type="application/json")
 
 
@@ -292,12 +436,12 @@ def view_pf(request, pf_filename):
     pf_path = settings.DATA_DIR / 'pf' / pf_filename
     if not pf_path.exists():
         raise Http404("Partition function file not found.")
+    update_download_count(increment=True)
     try:
         with open(pf_path, "r", encoding="utf-8") as f:
             content = f.read()
     except Exception as e:
         raise Http404(f"Error reading file: {e}")
-    update_download_count(increment=True)
     return HttpResponse(content, content_type="text/plain; charset=utf-8")
 
 
@@ -309,23 +453,24 @@ def download_csv(request, csv_filename):
     # Ensure it only accesses the intended directory
     safe_filename = os.path.basename(csv_filename).strip()
     
-    if not safe_filename.endswith(".csv"):
+    if safe_filename.endswith(".parquet"):
+        file_path = settings.DATA_DIR / 'cache' / safe_filename
+    elif safe_filename.endswith(".csv"):
+        file_path = settings.DATA_DIR / 'csv' / safe_filename
+    else:
         return redirect("linelist:download_csv", csv_filename=f"{safe_filename}.csv", permanent=True)
-
-    file_path = settings.DATA_DIR / 'csv' / safe_filename
     
     if file_path.exists():
         content_type, encoding = mimetypes.guess_type(str(file_path))
         if not content_type:
-            content_type = 'text/plain'
+            content_type = 'application/octet-stream' if safe_filename.endswith(".parquet") else 'text/plain'
             
         # USER REQUEST: .json and .pf should display inline (as_attachment=False)
         # .csv should be downloaded directly (as_attachment=True)
         is_inline = any(safe_filename.endswith(ext) for ext in ['.json', '.pf'])
         as_attachment = not is_inline
 
-        if as_attachment:
-            update_download_count(increment=True)
+        update_download_count(increment=True)
         
         return FileResponse(open(file_path, "rb"), content_type=content_type, as_attachment=as_attachment, filename=safe_filename)
     else:
@@ -465,16 +610,56 @@ def get_data(request):
             },
             status=400
         )
-   
+
+    # Count the request before reading/calculation starts, so cancelled clients
+    # are still counted once the request is accepted as valid.
+    accepted_download_count = max(1, len(iso_slugs))
+    update_download_count(increment=accepted_download_count)
+
+    if select_by_wavelength:
+        result_range_kind = "wl"
+        result_range_min = wvmin
+        result_range_max = wvmax
+    else:
+        result_range_kind = "wn"
+        result_range_min = numin
+        result_range_max = numax
+
     archive_name, archive_size, output_files, nlines, Smax = calc_spec(
-        numin, numax, T, Smin, isos
+        numin,
+        numax,
+        T,
+        Smin,
+        isos,
+        result_range_kind,
+        result_range_min,
+        result_range_max,
     )
+
+    counted_archives = request.session.get("counted_archives", {})
+    if not isinstance(counted_archives, dict):
+        counted_archives = {}
+    counted_archives[archive_name] = accepted_download_count
+    request.session["counted_archives"] = counted_archives
 
     request.session["iso_slugs"] = iso_slugs
     request.session["output_files"] = output_files
     request.session["numax"] = numax
 
-    bokeh_html = get_bokeh_html(iso_slugs, numin, numax, Smax, Smin, output_files, select_by_wavelength)
+    bokeh_html = get_bokeh_html(
+        iso_slugs,
+        numin,
+        numax,
+        Smax,
+        Smin,
+        output_files,
+        select_by_wavelength,
+        T,
+        Path(archive_name).stem,
+        result_range_kind,
+        result_range_min,
+        result_range_max,
+    )
 
     c = {
         "bokeh_html": bokeh_html,
@@ -504,7 +689,13 @@ def download_archive(request):
     file_path = settings.RESULTS_DIR / archive_name
     
     if file_path.exists():
-        update_download_count(increment=count_csv_files_in_archive(file_path))
+        counted_archives = request.session.get("counted_archives", {})
+        already_counted = isinstance(counted_archives, dict) and archive_name in counted_archives
+        if already_counted:
+            counted_archives.pop(archive_name, None)
+            request.session["counted_archives"] = counted_archives
+        else:
+            update_download_count(increment=count_csv_files_in_archive(file_path))
         return FileResponse(open(file_path, "rb"), as_attachment=True, filename=archive_name)
     else:
         raise Http404("File not found in results directory.")
@@ -521,17 +712,13 @@ def ajax_data(request):
     iso_slugs = request.session.get("iso_slugs", [])
     
     data = {}
-    colors = cycle(Spectral7)
-    for iso_slug in iso_slugs:
-        isocolor = next(colors)
+    colors = get_plot_colors(len(iso_slugs))
+    for idx, iso_slug in enumerate(iso_slugs):
+        isocolor = colors[idx]
         if iso_slug in output_files:
             file_path = settings.RESULTS_DIR / output_files[iso_slug]
             if file_path.exists():
-                df = pd.read_csv(file_path, usecols=["nu", "S"])
-                df = df[(df["nu"] >= numin) & (df["nu"] <= numax)]
-
-                MAX_POINTS_PER_ISO = 50000
-                MAX_TOTAL_PLOT_POINTS = 300000
+                df = read_result_plot_data(file_path, numin, numax)
                 n_iso = max(1, len(iso_slugs))
                 max_points_per_iso = min(
                     MAX_POINTS_PER_ISO,
@@ -542,7 +729,7 @@ def ajax_data(request):
                     x_col="nu",
                     y_col="S",
                     max_points=max_points_per_iso,
-                    top_k=3
+                    top_k=TOP_K_PER_BIN
                 )
 
                 data[f"x__{iso_slug}"] = df["nu"].tolist()
@@ -590,41 +777,103 @@ def reduce_for_plot(df, x_col="nu", y_col="S", max_points=50000, top_k=3):
     return df_plot[[x_col, y_col]]
 
 
-def get_bokeh_html(iso_slugs, numin, numax, Smax, Smin=1e-35, output_files=None, select_by_wavelength=False):
+def get_result_parquet_path(csv_path):
+    return Path(csv_path).with_suffix(".parquet")
+
+
+def read_result_plot_data(csv_path, numin=None, numax=None):
+    parquet_path = get_result_parquet_path(csv_path)
+    filters = None
+    if numin is not None and numax is not None:
+        filters = [
+            ("nu", ">=", float(numin)),
+            ("nu", "<=", float(numax)),
+        ]
+
+    if parquet_path.exists():
+        try:
+            df = pd.read_parquet(parquet_path, columns=["nu", "S"], filters=filters)
+        except Exception:
+            logger.exception("Unable to read result Parquet cache %s; falling back to CSV %s", parquet_path, csv_path)
+            df = pd.read_csv(csv_path, usecols=["nu", "S"])
+    else:
+        df = pd.read_csv(csv_path, usecols=["nu", "S"])
+
+    if numin is not None and numax is not None:
+        df = df[(df["nu"] >= numin) & (df["nu"] <= numax)]
+    return df[["nu", "S"]].dropna().sort_values("nu")
+
+
+def get_bokeh_html(
+    iso_slugs,
+    numin,
+    numax,
+    Smax,
+    Smin=1e-35,
+    output_files=None,
+    select_by_wavelength=False,
+    T=296,
+    plot_filestem=None,
+    range_kind="wn",
+    range_min=None,
+    range_max=None,
+):
     curdoc().theme = 'caliber'
+    request_numin = float(numin)
+    request_numax = float(numax)
+    if plot_filestem is None:
+        plot_filestem = make_decimal_timestamp()
+    if range_min is None:
+        range_min = request_numin
+    if range_max is None:
+        range_max = request_numax
+    plot_download_filenames = make_plot_download_filenames(
+        plot_filestem,
+        iso_slugs,
+        T,
+        request_numin,
+        request_numax,
+        range_kind,
+        range_min,
+        range_max,
+    )
+    default_plot_download_filename = (
+        plot_download_filenames["nm"] if select_by_wavelength else plot_download_filenames["wn"]
+    )
 
     # Pre-load data to determine true data bounds for zooming
     all_sources = []
+    top_sources = []
+    full_sources = []
+    full_available_flags = []
+    full_counts = []
     color_list = []
-    colors_iter = cycle(Spectral7)
+    iso_plot_stats = []
+    plot_colors = get_plot_colors(len(iso_slugs))
     
     true_nu_min = float('inf')
     true_nu_max = float('-inf')
 
-    for iso_slug in iso_slugs:
-        isocolor = next(colors_iter)
+    for idx, iso_slug in enumerate(iso_slugs):
+        isocolor = plot_colors[idx]
         color_list.append(isocolor)
         nu_data, wv_nm_data, wv_um_data, y_data = [], [], [], []
 
         if output_files and iso_slug in output_files:
             file_path = settings.RESULTS_DIR / output_files[iso_slug]
             if file_path.exists():
-                df = pd.read_csv(file_path, usecols=["nu", "S"])
-                df = df[(df["nu"] >= numin) & (df["nu"] <= numax)]
-
-                MAX_POINTS_PER_ISO = 50000
-                MAX_TOTAL_PLOT_POINTS = 300000
+                df_full = read_result_plot_data(file_path, numin, numax)
                 n_iso = max(1, len(iso_slugs))
                 max_points_per_iso = min(
                     MAX_POINTS_PER_ISO,
                     max(20000, MAX_TOTAL_PLOT_POINTS // n_iso)
                 )
                 df = reduce_for_plot(
-                    df,
+                    df_full,
                     x_col="nu",
                     y_col="S",
                     max_points=max_points_per_iso,
-                    top_k=3
+                    top_k=TOP_K_PER_BIN
                 )
                 
                 if not df.empty:
@@ -635,17 +884,64 @@ def get_bokeh_html(iso_slugs, numin, numax, Smax, Smin=1e-35, output_files=None,
                 y_data = df["S"].tolist()
                 wv_nm_data = (1e7 / df["nu"]).tolist()
                 wv_um_data = (1e4 / df["nu"]).tolist()
+                if len(df_full) <= FULL_SCATTER_FORCE_LIMIT:
+                    full_nu_data = df_full["nu"].tolist()
+                    full_y_data = df_full["S"].tolist()
+                    full_wv_nm_data = (1e7 / df_full["nu"]).tolist()
+                    full_wv_um_data = (1e4 / df_full["nu"]).tolist()
+                    full_available = True
+                else:
+                    full_nu_data, full_y_data, full_wv_nm_data, full_wv_um_data = [], [], [], []
+                    full_available = False
+                full_count = len(df_full)
+                total_strength = float(df_full["S"].sum()) if full_count else 0.0
+            else:
+                full_nu_data, full_y_data, full_wv_nm_data, full_wv_um_data = [], [], [], []
+                full_available = False
+                full_count = 0
+                total_strength = 0.0
+        else:
+            full_nu_data, full_y_data, full_wv_nm_data, full_wv_um_data = [], [], [], []
+            full_available = False
+            full_count = 0
+            total_strength = 0.0
+
+        initial_use_full = False
+        current_nu_data = full_nu_data if initial_use_full else nu_data
+        current_y_data = full_y_data if initial_use_full else y_data
+        current_wv_nm_data = full_wv_nm_data if initial_use_full else wv_nm_data
+        current_wv_um_data = full_wv_um_data if initial_use_full else wv_um_data
 
         if select_by_wavelength:
-            x_data = wv_nm_data[:]
+            x_data = current_wv_nm_data[:]
         else:
-            x_data = nu_data[:]
+            x_data = current_nu_data[:]
 
         source = ColumnDataSource(data=dict(
-            x=x_data, y=y_data,
-            nu=nu_data, wv_nm=wv_nm_data, wv_um=wv_um_data
+            x=x_data, y=current_y_data,
+            y0_log=[max(float(Smin), 1e-35) * 0.5] * len(current_y_data),
+            y0_lin=[0] * len(current_y_data),
+            nu=current_nu_data, wv_nm=current_wv_nm_data, wv_um=current_wv_um_data,
         ))
         all_sources.append(source)
+        top_sources.append(ColumnDataSource(data=dict(
+            nu=nu_data, y=y_data, wv_nm=wv_nm_data, wv_um=wv_um_data,
+        )))
+        full_sources.append(ColumnDataSource(data=dict(
+            nu=full_nu_data, y=full_y_data, wv_nm=full_wv_nm_data, wv_um=full_wv_um_data,
+        )))
+        full_available_flags.append(full_available)
+        full_counts.append(full_count)
+        iso_plot_stats.append(dict(index=len(all_sources) - 1, full_count=full_count, total_strength=total_strength))
+
+    plot_order = [
+        item["index"]
+        for item in sorted(
+            iso_plot_stats,
+            key=lambda item: (item["full_count"], item["total_strength"]),
+            reverse=True,
+        )
+    ]
 
     # Use true bounds if data exists, otherwise fallback to form bounds
     if true_nu_min != float('inf') and true_nu_max != float('-inf'):
@@ -752,13 +1048,16 @@ def get_bokeh_html(iso_slugs, numin, numax, Smax, Smin=1e-35, output_files=None,
         f = bp.figure(
             sizing_mode="stretch_width",
             height=500,
-            tools="pan,wheel_zoom,box_zoom,save,reset,hover",
+            tools="pan,wheel_zoom,box_zoom,reset,hover",
             x_axis_label=default_x_label,
             y_axis_label="Intensity, cm / molecule",
             output_backend="canvas",
             y_axis_type=y_axis_type,
         )
+        save_tool = SaveTool(filename=default_plot_download_filename)
+        f.add_tools(save_tool)
         f.toolbar.logo = None
+        f.toolbar.active_inspect = None
         f.x_range = shared_x_range
         if y_axis_type == "log":
             f.y_range = Range1d(Smin * 0.5, Smax * 2.0)
@@ -789,26 +1088,145 @@ def get_bokeh_html(iso_slugs, numin, numax, Smax, Smin=1e-35, output_files=None,
             major_label_text_font_size="14pt",
         )
         f.add_layout(top_ax, 'above')
+        right_ax = LinearAxis(
+            ticker=FixedTicker(ticks=[]),
+            major_tick_line_color=None,
+            minor_tick_line_color=None,
+            major_label_text_color=None,
+            axis_line_color="black",
+        )
+        f.add_layout(right_ax, 'right')
 
-        # Add data glyphs (shared sources)
-        for idx, slug in enumerate(iso_slugs):
-            f.circle(
-                x="x", y="y", color=color_list[idx], size=5, alpha=0.6,
-                source=all_sources[idx], legend_label=slug,
+        # Add data glyphs in draw order. Stronger/denser spectra are drawn
+        # first, so weaker/sparser spectra remain visible above them.
+        segment_renderers = []
+        circle_renderers = []
+        segment_by_index = {}
+        circle_by_index = {}
+        legend_line_proxy_by_index = {}
+        legend_circle_proxy_by_index = {}
+        y0_col = "y0_log" if y_axis_type == "log" else "y0_lin"
+        proxy_x0 = min(x_start, x_end)
+        proxy_x1 = proxy_x0 + max(abs(x_end - x_start) * 0.001, 1e-12)
+        proxy_y0 = max(float(Smax), 1e-35) * 10.0
+        proxy_y1 = proxy_y0 * 1.1
+        for idx in plot_order:
+            seg = f.segment(
+                x0="x", y0=y0_col, x1="x", y1="y",
+                color=color_list[idx], alpha=0.55, line_width=1,
+                source=all_sources[idx],
             )
-        f.legend.click_policy = "hide"
-        return f, top_ax
+            cir = f.circle(
+                x="x", y="y", color=color_list[idx], size=5, alpha=0.0,
+                source=all_sources[idx],
+            )
+            segment_renderers.append(seg)
+            circle_renderers.append(cir)
+            segment_by_index[idx] = seg
+            circle_by_index[idx] = cir
+            legend_line_proxy_by_index[idx] = f.quad(
+                left=[proxy_x0], right=[proxy_x1], bottom=[proxy_y0], top=[proxy_y1],
+                fill_color=color_list[idx], line_color=color_list[idx],
+                fill_alpha=1.0, line_alpha=1.0,
+            )
+            legend_circle_proxy_by_index[idx] = f.circle(
+                x=[proxy_x0], y=[proxy_y0],
+                color=color_list[idx], size=8, fill_alpha=1.0, line_alpha=1.0,
+            )
+            legend_line_proxy_by_index[idx].js_on_change(
+                "visible",
+                CustomJS(args=dict(
+                    segment=seg,
+                    circle=cir,
+                    paired_proxy=legend_circle_proxy_by_index[idx],
+                ), code="""
+                    segment.visible = cb_obj.visible;
+                    circle.visible = cb_obj.visible;
+                    paired_proxy.visible = cb_obj.visible;
+                """)
+            )
+            legend_circle_proxy_by_index[idx].js_on_change(
+                "visible",
+                CustomJS(args=dict(
+                    segment=seg,
+                    circle=cir,
+                    paired_proxy=legend_line_proxy_by_index[idx],
+                ), code="""
+                    segment.visible = cb_obj.visible;
+                    circle.visible = cb_obj.visible;
+                    paired_proxy.visible = cb_obj.visible;
+                """)
+            )
 
-    fig_log, top_axis_log = make_fig("log")
-    fig_lin, top_axis_lin = make_fig("linear")
+        top_legend_items = []
+        full_legend_items = []
+        for idx, slug in enumerate(iso_slugs):
+            top_legend_items.append(LegendItem(
+                label=slug,
+                renderers=[legend_line_proxy_by_index[idx]],
+            ))
+            full_legend_items.append(LegendItem(
+                label=slug,
+                renderers=[legend_circle_proxy_by_index[idx]],
+            ))
+
+        top_legend = Legend(
+            items=top_legend_items,
+            location="center",
+            orientation="horizontal",
+            ncols=get_plot_legend_ncols(len(iso_slugs)),
+            click_policy="hide",
+            glyph_width=25,
+            glyph_height=4,
+            label_height=4,
+            spacing=14,
+            margin=8,
+            padding=8,
+        )
+        full_legend = Legend(
+            items=full_legend_items,
+            location="center",
+            orientation="horizontal",
+            ncols=get_plot_legend_ncols(len(iso_slugs)),
+            click_policy="hide",
+            spacing=14,
+            margin=8,
+            padding=8,
+            visible=False,
+        )
+        f.add_layout(top_legend, "below")
+        f.add_layout(full_legend, "below")
+        return f, top_ax, segment_renderers, circle_renderers, top_legend, full_legend, save_tool
+
+    fig_log, top_axis_log, segments_log, circles_log, top_legend_log, full_legend_log, save_tool_log = make_fig("log")
+    fig_lin, top_axis_lin, segments_lin, circles_lin, top_legend_lin, full_legend_lin, save_tool_lin = make_fig("linear")
     fig_lin.visible = False
 
     # --- Controls ---
+    centered_select_stylesheet = """
+        label {
+            display: block;
+            text-align: center;
+            width: 100%;
+            margin-bottom: 8px;
+            font-size: 13px;
+        }
+        select {
+            text-align: center;
+            text-align-last: center;
+            font-size: 13px;
+        }
+        option {
+            text-align: center;
+            font-size: 13px;
+        }
+    """
 
     # Y-axis scale selector (toggles figure visibility)
     y_select = Select(
         title="Y Scale", value="Log",
-        options=["Log", "Linear"], width=120
+        options=["Log", "Linear"], width=100,
+        stylesheets=[centered_select_stylesheet],
     )
     y_callback = CustomJS(args=dict(
         fig_log=fig_log, fig_lin=fig_lin
@@ -827,7 +1245,8 @@ def get_bokeh_html(iso_slugs, numin, numax, Smax, Smin=1e-35, output_files=None,
     x_select = Select(
         title="X Unit", value=default_x_unit,
         options=["Wavenumber (cm⁻¹)", "Wavelength (nm)", "Wavelength (μm)"],
-        width=200
+        width=180,
+        stylesheets=[centered_select_stylesheet],
     )
     x_callback = CustomJS(args=dict(
         sources=all_sources,
@@ -837,20 +1256,30 @@ def get_bokeh_html(iso_slugs, numin, numax, Smax, Smin=1e-35, output_files=None,
         shared_xr=shared_x_range,
         numin=numin, numax=numax,
         wvmin_nm=wvmin_nm, wvmax_nm=wvmax_nm,
-        wvmin_um=wvmin_um, wvmax_um=wvmax_um
+        wvmin_um=wvmin_um, wvmax_um=wvmax_um,
+        save_tool_log=save_tool_log,
+        save_tool_lin=save_tool_lin,
+        filename_wn=plot_download_filenames["wn"],
+        filename_nm=plot_download_filenames["nm"],
+        filename_um=plot_download_filenames["um"],
     ), code="""
         const unit = cb_obj.value;
+        let saveFilename = filename_wn;
         for (const source of sources) {
             const d = source.data;
             if (unit.startsWith("Wavenumber")) {
                 d['x'] = d['nu'].slice();
             } else if (unit.includes("nm")) {
                 d['x'] = d['wv_nm'].slice();
+                saveFilename = filename_nm;
             } else {
                 d['x'] = d['wv_um'].slice();
+                saveFilename = filename_um;
             }
             source.change.emit();
         }
+        save_tool_log.filename = saveFilename;
+        save_tool_lin.filename = saveFilename;
 
         const figs = [fig_log, fig_lin];
         const tops = [top_log, top_lin];
@@ -884,15 +1313,209 @@ def get_bokeh_html(iso_slugs, numin, numax, Smax, Smin=1e-35, output_files=None,
     """)
     x_select.js_on_change('value', x_callback)
 
+    full_warning = Div(
+        text=(
+            "<div style='padding:8px 10px;border-radius:6px;background:#fff3cd;"
+            "color:#664d03;border:1px solid #ffecb5;font-size:13px;'>"
+            f"Full scatter draws all available points up to {FULL_SCATTER_FORCE_LIMIT:,} points per iso. "
+            f"Above {FULL_SCATTER_POINT_LIMIT:,} points per iso it may render slowly; "
+            f"above {FULL_SCATTER_FORCE_LIMIT:,}, that iso is shown with Top-K instead. "
+            "Zoom to a smaller range for true full scatter."
+            "</div>"
+        ),
+        visible=False,
+        sizing_mode="stretch_width",
+    )
+
+    plot_select = Select(
+        title="Plot Mode", value="Top-K Stick Spectra",
+        options=["Top-K Stick Spectra", "Full Scatter"], width=180,
+        stylesheets=[centered_select_stylesheet],
+    )
+    focus_select = Select(
+        title="Highlight Isotopologue", value="All",
+        options=["All"] + list(iso_slugs), width=180,
+        stylesheets=[centered_select_stylesheet],
+    )
+
+    renderer_slugs = [iso_slugs[idx] for idx in plot_order]
+    renderer_indices = plot_order[:]
+    mode_focus_callback = CustomJS(args=dict(
+        sources=all_sources,
+        top_sources=top_sources,
+        full_sources=full_sources,
+        full_available_flags=full_available_flags,
+        full_counts=full_counts,
+        fig_log=fig_log,
+        fig_lin=fig_lin,
+        x_select=x_select,
+        plot_select=plot_select,
+        focus_select=focus_select,
+        full_warning=full_warning,
+        segments_log=segments_log,
+        segments_lin=segments_lin,
+        circles_log=circles_log,
+        circles_lin=circles_lin,
+        top_legend_log=top_legend_log,
+        top_legend_lin=top_legend_lin,
+        full_legend_log=full_legend_log,
+        full_legend_lin=full_legend_lin,
+        renderer_slugs=renderer_slugs,
+        renderer_indices=renderer_indices,
+        full_limit=FULL_SCATTER_POINT_LIMIT,
+        full_force_limit=FULL_SCATTER_FORCE_LIMIT,
+        log_baseline=max(float(Smin), 1e-35) * 0.5,
+    ), code="""
+        const unit = x_select.value;
+        const mode = plot_select.value;
+        const isFullScatter = mode.startsWith("Full Scatter");
+        const focus = focus_select.value;
+        let blocked = false;
+
+        for (let sourceIndex = 0; sourceIndex < sources.length; sourceIndex++) {
+            const source = sources[sourceIndex];
+            const d = source.data;
+            const useFull = isFullScatter && full_available_flags[sourceIndex] === true;
+            if (isFullScatter && full_counts[sourceIndex] > full_limit) {
+                blocked = true;
+            }
+
+            const sourceData = useFull ? full_sources[sourceIndex].data : top_sources[sourceIndex].data;
+            d['nu'] = sourceData['nu'].slice();
+            d['y'] = sourceData['y'].slice();
+            d['wv_nm'] = sourceData['wv_nm'].slice();
+            d['wv_um'] = sourceData['wv_um'].slice();
+            d['y0_log'] = Array(d['y'].length).fill(log_baseline);
+            d['y0_lin'] = Array(d['y'].length).fill(0);
+
+            if (unit.startsWith("Wavenumber")) {
+                d['x'] = d['nu'].slice();
+            } else if (unit.includes("nm")) {
+                d['x'] = d['wv_nm'].slice();
+            } else {
+                d['x'] = d['wv_um'].slice();
+            }
+            source.change.emit();
+        }
+
+        full_warning.visible = blocked && isFullScatter;
+        top_legend_log.visible = mode === "Top-K Stick Spectra";
+        top_legend_lin.visible = mode === "Top-K Stick Spectra";
+        full_legend_log.visible = isFullScatter;
+        full_legend_lin.visible = isFullScatter;
+
+        const allSegments = segments_log.concat(segments_lin);
+        const allCircles = circles_log.concat(circles_lin);
+        for (let i = 0; i < allSegments.length; i++) {
+            const orderIndex = i % renderer_slugs.length;
+            const slug = renderer_slugs[orderIndex];
+            const sourceIndex = renderer_indices[orderIndex];
+            const fallbackTop = isFullScatter && full_available_flags[sourceIndex] !== true;
+            const isFocused = focus === "All" || focus === slug;
+            allSegments[i].glyph.line_alpha = (mode === "Top-K Stick Spectra" || fallbackTop) ? (isFocused ? 0.55 : 0.02) : 0.0;
+            allCircles[i].glyph.fill_alpha = (isFullScatter && !fallbackTop) ? (isFocused ? 0.55 : 0.02) : 0.0;
+            allCircles[i].glyph.line_alpha = (isFullScatter && !fallbackTop) ? (isFocused ? 0.55 : 0.02) : 0.0;
+            allSegments[i].glyph.change.emit();
+            allCircles[i].glyph.change.emit();
+        }
+
+        function applyFocusLayer(fig, segments, circles) {
+            const dataRenderers = segments.concat(circles);
+            const kept = fig.renderers.filter((renderer) => !dataRenderers.includes(renderer));
+            const order = renderer_slugs.map((_, index) => index);
+            if (focus !== "All") {
+                const focusIndex = renderer_slugs.indexOf(focus);
+                if (focusIndex >= 0) {
+                    const currentIndex = order.indexOf(focusIndex);
+                    if (currentIndex >= 0) {
+                        order.splice(currentIndex, 1);
+                    }
+                    order.push(focusIndex);
+                }
+            }
+            for (const idx of order) {
+                kept.push(segments[idx]);
+                kept.push(circles[idx]);
+            }
+            fig.renderers = kept;
+            fig.change.emit();
+        }
+
+        applyFocusLayer(fig_log, segments_log, circles_log);
+        applyFocusLayer(fig_lin, segments_lin, circles_lin);
+    """)
+    plot_select.js_on_change('value', mode_focus_callback)
+    focus_select.js_on_change('value', mode_focus_callback)
+
     # Compose layout
-    controls = row(x_select, y_select)
-    layout = column(controls, fig_log, fig_lin, sizing_mode="stretch_width")
+    left_controls = row(x_select, y_select, spacing=12)
+    right_controls = row(plot_select, focus_select, spacing=12)
+    controls = row(left_controls, Spacer(sizing_mode="stretch_width"), right_controls, sizing_mode="stretch_width")
+    layout = column(controls, full_warning, fig_log, fig_lin, sizing_mode="stretch_width")
 
     bokeh_script, bokeh_div = components(layout)
     html = '<div class="bokeh-plot">' + bokeh_script + bokeh_div + "</div>"
     return html
 
-def process_iso_worker(iso_slug, ll_name, Q, Q_ref, numin, numax, T, T_ref, Smin, filestem, results_dir, numexpr_threads=1):
+
+def get_cached_parquet_path(csv_path):
+    return settings.DATA_DIR / 'cache' / f"{Path(csv_path).stem}.parquet"
+
+
+def read_linelist_for_calculation(csv_path, numin, numax):
+    parquet_path = get_cached_parquet_path(csv_path)
+
+    if parquet_path.exists():
+        try:
+            return pd.read_parquet(
+                parquet_path,
+                filters=[
+                    ("nu", ">=", float(numin)),
+                    ("nu", "<=", float(numax)),
+                ],
+            ).copy()
+        except Exception:
+            logger.exception(
+                "Unable to read Parquet cache %s; falling back to CSV %s",
+                parquet_path,
+                csv_path,
+            )
+
+    df = pd.read_csv(csv_path)
+    return df[(df["nu"] >= numin) & (df["nu"] <= numax)].copy()
+
+
+def format_smin_for_filename(value):
+    value = float(value)
+    if value == 0:
+        return "0"
+    return f"{value:.6g}".replace("E", "e").replace("e+", "e")
+
+
+def make_result_output_filename(filestem, iso_slug, T, range_kind, range_min, range_max, Smin, extension="csv"):
+    range_prefix = "wl" if range_kind == "wl" else "wn"
+    range_part = f"{range_prefix}{float(range_min):.6f}-{float(range_max):.6f}"
+    smin_part = f"Smin{format_smin_for_filename(Smin)}"
+    return f"{filestem}__{iso_slug}__{int(T)}K__{range_part}__{smin_part}.{extension}"
+
+
+def process_iso_worker(
+    iso_slug,
+    ll_name,
+    Q,
+    Q_ref,
+    numin,
+    numax,
+    T,
+    T_ref,
+    Smin,
+    filestem,
+    results_dir,
+    range_kind,
+    range_min,
+    range_max,
+    numexpr_threads=1,
+):
     
     c, h, kB = 29979245800.0, 6.62607015e-34, 1.380649e-23
     c2 = h * c / kB
@@ -905,8 +1528,7 @@ def process_iso_worker(iso_slug, ll_name, Q, Q_ref, numin, numax, T, T_ref, Smin
         ne = None
         use_numexpr = False
     
-    df = pd.read_csv(ll_name)
-    df = df[(df["nu"] >= numin) & (df["nu"] <= numax)].copy()
+    df = read_linelist_for_calculation(ll_name, numin, numax)
 
     if len(df) > 0:
         nu = df["nu"].to_numpy(dtype=np.float64, copy=False)
@@ -965,8 +1587,21 @@ def process_iso_worker(iso_slug, ll_name, Q, Q_ref, numin, numax, T, T_ref, Smin
         else:
             df.insert(1, "S", [])
 
-    output_filename = f"{filestem}__{iso_slug}__{int(T)}K.csv"
-    df.to_csv(os.path.join(results_dir, output_filename), index=False)
+    output_filename = make_result_output_filename(
+        filestem,
+        iso_slug,
+        T,
+        range_kind,
+        range_min,
+        range_max,
+        Smin,
+    )
+    output_path = Path(results_dir) / output_filename
+    df.to_csv(output_path, index=False)
+    try:
+        df[["nu", "S"]].to_parquet(get_result_parquet_path(output_path), index=False)
+    except Exception:
+        logger.exception("Unable to write result Parquet plot cache for %s", output_path)
     
     iso_nlines = len(df)
     isoSmax = df["S"].max() if iso_nlines > 0 else 0
@@ -975,13 +1610,17 @@ def process_iso_worker(iso_slug, ll_name, Q, Q_ref, numin, numax, T, T_ref, Smin
     
     return iso_slug, output_filename, iso_nlines, isoSmax
 
-def calc_spec(numin, numax, T, Smin, isos):
+def calc_spec(numin, numax, T, Smin, isos, range_kind="wn", range_min=None, range_max=None):
     import concurrent.futures
     filestem = make_decimal_timestamp()
     nlines = 0
     output_files = {}
     Smax = 0
     T_ref = 296
+    if range_min is None:
+        range_min = numin
+    if range_max is None:
+        range_max = numax
 
     jobs = []
     for iso in isos:
@@ -989,7 +1628,22 @@ def calc_spec(numin, numax, T, Smin, isos):
         ll_name = settings.DATA_DIR / 'csv' / f"{hrmeta.data_filename}.csv"
         Q = hrmeta.get_Q(T)
         Q_ref = hrmeta.get_Q(T_ref)
-        jobs.append((iso.slug, ll_name, Q, Q_ref, numin, numax, T, T_ref, Smin, filestem, settings.RESULTS_DIR))
+        jobs.append((
+            iso.slug,
+            ll_name,
+            Q,
+            Q_ref,
+            numin,
+            numax,
+            T,
+            T_ref,
+            Smin,
+            filestem,
+            settings.RESULTS_DIR,
+            range_kind,
+            range_min,
+            range_max,
+        ))
 
     if len(jobs) == 1:
         job = jobs[0] + (4,)

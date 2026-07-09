@@ -511,6 +511,7 @@
         var nisosSelected = 0;
         var selectedIsotopologues = [];
         var selectedIsotopologuesElement = document.getElementById("selectedIsotopologues");
+        var MAX_SELECTED_ISOS = 30;
         var allSelected = false;
         var moleculeCheckboxes = document.querySelectorAll("input.molecule-checkbox");
         var isoCheckboxes = document.querySelectorAll("input.iso-checkbox");
@@ -535,10 +536,15 @@
         
         function selectAll() {
             var visibleIsos = tableBody.querySelectorAll("tr:not([style*='display: none']) .iso-checkbox");
+            var hitLimit = false;
             
             // Recompute from visible only
             visibleIsos.forEach(function(isoCheckbox) {
                 if(!isoCheckbox.checked) {
+                    if (nisosSelected >= MAX_SELECTED_ISOS) {
+                        hitLimit = true;
+                        return;
+                    }
                     var isotopologueSlug = isoCheckbox.value;
                     var isoHtml = document.querySelector(`.iso-html-val[data-slug='${isotopologueSlug}']`).innerHTML.trim();
                     
@@ -553,6 +559,9 @@
                     isoCheckbox.checked = true;
                 }
             });
+            if (hitLimit) {
+                alert('You can select at most ' + MAX_SELECTED_ISOS + ' isotopologues at a time.');
+            }
             updateMoleculeCheckboxesByRow();
             updateSelectionDisplay();
         }
@@ -623,11 +632,18 @@
         function selectAllIsotopologuesOfMolecule(molecule_slug) {
             var moleculeCheckbox = document.getElementById(molecule_slug + "-checkbox");
             moleculeCheckbox.checked = true;
+            var hitLimit = false;
             document.querySelectorAll("input." + molecule_slug + "-checkbox").forEach(function(isoCheckbox) {
                 if (!isoCheckbox.checked) {
-                    selectIso(isoCheckbox);
+                    if (!selectIso(isoCheckbox, false)) {
+                        hitLimit = true;
+                    }
                 }
             });
+            if (hitLimit) {
+                alert('You can select at most ' + MAX_SELECTED_ISOS + ' isotopologues at a time.');
+            }
+            updateMoleculeCheckboxesByRow();
         }
 
         function deselectAllIsotopologuesOfMolecule(molecule_slug) {
@@ -650,12 +666,21 @@
             });
         });
 
-        function selectIso(isoCheckbox) {
-                isoCheckbox.checked = true;
+        function selectIso(isoCheckbox, showAlert = true) {
                 var isotopologueSlug = isoCheckbox.value;
+                var alreadySelected = selectedIsotopologues.some(obj => obj.slug === isotopologueSlug);
+                if (!alreadySelected && nisosSelected >= MAX_SELECTED_ISOS) {
+                    isoCheckbox.checked = false;
+                    if (showAlert) {
+                        alert('You can select at most ' + MAX_SELECTED_ISOS + ' isotopologues at a time.');
+                    }
+                    updateSelectAllCheckbox();
+                    return false;
+                }
+                isoCheckbox.checked = true;
                 var isoHtml = document.querySelector(`.iso-html-val[data-slug='${isotopologueSlug}']`).innerHTML.trim();
                 
-                if (!selectedIsotopologues.some(obj => obj.slug === isotopologueSlug)) {
+                if (!alreadySelected) {
                     selectedIsotopologues.push({
                         slug: isotopologueSlug, 
                         html: isoHtml,
@@ -665,6 +690,7 @@
                 }
                 updateSelectionDisplay();
                 updateSelectAllCheckbox();
+                return true;
         }
         function deselectIso(isoCheckbox) {
                 isoCheckbox.checked = false;
@@ -697,8 +723,11 @@
         document.querySelectorAll(".iso-checkbox").forEach(function(isoCheckbox) {
             isoCheckbox.addEventListener("change", function() {
                 if (this.checked) {
-                    selectIso(isoCheckbox);
-                    updateMoleculeCheckbox(this);
+                    if (selectIso(isoCheckbox)) {
+                        updateMoleculeCheckbox(this);
+                    } else {
+                        updateMoleculeCheckbox(this);
+                    }
                 } else {
                     deselectIso(isoCheckbox);
                     updateMoleculeCheckbox(this);

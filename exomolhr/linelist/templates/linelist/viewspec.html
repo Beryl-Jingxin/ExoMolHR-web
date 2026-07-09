@@ -54,14 +54,18 @@
 
     /* Simple inline style for selected isos */
     .iso-chip-container {
-        display: flex;
-        flex-wrap: wrap;
-        gap: 10px 20px;
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(90px, max-content));
+        column-gap: 10px;
+        row-gap: 10px;
+        align-items: center;
     }
     .iso-chip {
         font-size: 0.95rem;
         font-weight: 600;
         color: #4497ef;
+        min-width: 0;
+        white-space: nowrap;
     }
 
     .stats-text {
@@ -340,4 +344,3 @@
 </script>
 
 {% endblock content %}
-

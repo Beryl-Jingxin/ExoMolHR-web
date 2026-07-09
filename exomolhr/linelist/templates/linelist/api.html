@@ -211,7 +211,11 @@
                     <span class="api-method-badge badge-get">GET</span>
                     Line List at 296 K
                 </h2>
-                <p class="api-section-desc">Retrieves specific datasets structured as CSV line lists, featuring exact intensities pre-calculated at the standard 296 K</p>
+                <p class="api-section-desc">Retrieves specific line-list datasets as CSV or Parquet files, with exact intensities pre-calculated at reference temperature 296 K</p>
+            </div>
+
+            <div class="parameter-hint" style="background: #ffffff; border-bottom: 1px solid #334155;">
+              <span style="color: #0f172a; font-weight: 600;">CSV File</span>
             </div>
             <div class="api-code-block">
                 <span class="api-code-label">Endpoint Definition</span>
@@ -223,6 +227,22 @@
                 <span class="api-code-label">Live Example</span>
                 <a href="https://www.exomol.com/exomolhr/db/AlCl__27Al-35Cl__YNAT.csv" target="_blank" class="example-link">
                     <span class="url-base">https://www.exomol.com/exomolhr/db/</span><span class="url-path">AlCl__27Al-35Cl__YNAT.csv</span>
+                </a>
+            </div>
+
+            <div class="parameter-hint" style="background: #ffffff; border-bottom: 1px solid #334155;">
+              <span style="color: #0f172a; font-weight: 600;">Parquet File</span>
+            </div>
+            <div class="api-code-block">
+                <span class="api-code-label">Endpoint Definition</span>
+                <span class="api-url">
+                    <span class="url-base">https://www.exomol.com/exomolhr/db/</span><span class="url-param">&lt;MOLECULE&gt;</span>__<span class="url-param">&lt;ISO-SLUG&gt;</span>__<span class="url-param">&lt;DATASET&gt;</span><span class="url-base">.parquet</span>
+                </span>
+            </div>
+            <div class="api-code-block example">
+                <span class="api-code-label">Live Example</span>
+                <a href="https://www.exomol.com/exomolhr/db/AlCl__27Al-35Cl__YNAT.parquet" target="_blank" class="example-link">
+                    <span class="url-base">https://www.exomol.com/exomolhr/db/</span><span class="url-path">AlCl__27Al-35Cl__YNAT.parquet</span>
                 </a>
             </div>
         </div>
