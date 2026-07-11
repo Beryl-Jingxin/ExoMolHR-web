@@ -44,7 +44,7 @@ PLOT_COLOR_STOPS = [
     "#8ea7e2",  # blue
     "#6fb9e7",  # sky blue
     "#a3cdc6",  # teal
-    "#8ccd85",  # green
+    "#92bb8d",  # green
     "#acde8d",  # yellow green
     "#ecee77",  # yellow 
     "#efbc63",  # orange
@@ -53,7 +53,7 @@ PLOT_PRIORITY_COLORS = [
     "#6fb9e7",  # sky blue
     "#acde8d",  # yellow green
     "#ecee77",  # yellow 
-    "#8ccd85",  # green
+    "#92bb8d",  # green
     "#8ea7e2",  # blue
     "#efbc63",  # orange
     "#a3cdc6",  # teal
@@ -174,7 +174,7 @@ def make_html_plot_legend(iso_slugs, iso_html_by_slug, color_list, kind):
         items.append(
             (
                 "<button type='button' data-legend-index='{idx}' "
-                "style='display:inline-flex;align-items:center;gap:6px;margin:4px 8px;padding:2px 4px;"
+                "style='display:inline-flex;align-items:center;gap:6px;margin:0;padding:2px 4px;"
                 "border:0;background:transparent;color:#333;font:12pt Arial, sans-serif;cursor:pointer;"
                 "white-space:nowrap;line-height:1.25;'>"
                 "<span aria-hidden='true' style='display:inline-block;flex:0 0 auto;background:{color};{glyph_style}'></span>"
@@ -184,23 +184,32 @@ def make_html_plot_legend(iso_slugs, iso_html_by_slug, color_list, kind):
         )
     return (
         "<div class='exomolhr-plot-legend' "
-        "style='display:flex;flex-wrap:wrap;justify-content:center;align-items:center;"
-        "gap:2px 6px;margin:6px 8px 2px;padding:4px 8px;'>"
+        "style='display:block;margin:6px 8px 2px;padding:4px 8px;'>"
+        "<div data-legend-items='true' "
+        "style='display:flex;flex-wrap:wrap;justify-content:center;align-items:center;gap:8px 22px;width:100%;'>"
         + "".join(items)
-        + "</div>"
+        + "</div></div>"
     )
 
 
-def make_html_dropdown(title, options, selected_value, dropdown_key):
+def make_html_dropdown(title, options, selected_value, dropdown_key, draggable_values=None, layer_indices_by_value=None):
+    draggable_values = set(draggable_values or [])
+    layer_indices_by_value = layer_indices_by_value or {}
     option_buttons = []
-    for value, label in options:
+    for idx, (value, label) in enumerate(options):
+        drag_attrs = ""
+        drag_style = ""
+        if value in draggable_values:
+            layer_index = layer_indices_by_value.get(value, idx - 1)
+            drag_attrs = " draggable='true' data-layer-index='{idx}'".format(idx=layer_index)
+            drag_style = "cursor:grab;"
         option_buttons.append(
             (
-                "<button type='button' data-dropdown-value='{value}' "
+                "<button type='button' data-dropdown-value='{value}'{drag_attrs} "
                 "style='display:block;width:100%;box-sizing:border-box;padding:7px 10px;border:0;"
                 "background:white;color:#333;text-align:center;"
-                "font-family:\"Josefin Sans\", sans-serif;font-size:14px;cursor:pointer;white-space:nowrap;'>{label}</button>"
-            ).format(value=escape(value, quote=True), label=label)
+                "font-family:\"Josefin Sans\", sans-serif;font-size:14px;cursor:pointer;white-space:nowrap;{drag_style}'>{label}</button>"
+            ).format(value=escape(value, quote=True), drag_attrs=drag_attrs, drag_style=drag_style, label=label)
         )
     selected_label = next((label for value, label in options if value == selected_value), selected_value)
     return (
@@ -227,11 +236,18 @@ def make_html_dropdown(title, options, selected_value, dropdown_key):
     )
 
 
-def make_html_focus_dropdown(iso_slugs, iso_html_by_slug):
+def make_html_focus_dropdown(ordered_iso_slugs, iso_html_by_slug, layer_indices_by_slug):
     options = [("All", "All")]
-    for slug in iso_slugs:
+    for slug in ordered_iso_slugs:
         options.append((slug, iso_html_by_slug.get(slug, iso_slug_to_formula_html(slug))))
-    return make_html_dropdown("Highlight Isotopologue", options, "All", "focus")
+    return make_html_dropdown(
+        "Highlight & Order",
+        options,
+        "All",
+        "focus",
+        draggable_values=ordered_iso_slugs,
+        layer_indices_by_value=layer_indices_by_slug,
+    )
 
 
 def format_plot_range_value(value):
@@ -1377,9 +1393,18 @@ def get_bokeh_html(
         width=180,
         disable_math=True,
     )
+    renderer_slugs = [iso_slugs[idx] for idx in plot_order]
+    renderer_indices = plot_order[:]
+    initial_layer_order_top_first = list(reversed(range(len(renderer_slugs))))
+    focus_ordered_slugs = [renderer_slugs[idx] for idx in initial_layer_order_top_first]
+    layer_indices_by_slug = {
+        renderer_slugs[idx]: idx
+        for idx in range(len(renderer_slugs))
+    }
     focus_source = ColumnDataSource(data=dict(value=["All"]))
+    layer_order_source = ColumnDataSource(data=dict(order=initial_layer_order_top_first))
     focus_dropdown = Div(
-        text=make_html_focus_dropdown(iso_slugs, iso_formula_html_by_slug),
+        text=make_html_focus_dropdown(focus_ordered_slugs, iso_formula_html_by_slug, layer_indices_by_slug),
         width=180,
         disable_math=True,
     )
@@ -1389,10 +1414,9 @@ def get_bokeh_html(
         y_scale_source=y_scale_source,
         plot_mode_source=plot_mode_source,
         focus_source=focus_source,
+        layer_order_source=layer_order_source,
     ), code=""))
 
-    renderer_slugs = [iso_slugs[idx] for idx in plot_order]
-    renderer_indices = plot_order[:]
     mode_focus_callback = CustomJS(args=dict(
         sources=all_sources,
         top_sources=top_sources,
@@ -1404,6 +1428,7 @@ def get_bokeh_html(
         x_unit_source=x_unit_source,
         plot_mode_source=plot_mode_source,
         focus_source=focus_source,
+        layer_order_source=layer_order_source,
         full_warning=full_warning,
         segments_log=segments_log,
         segments_lin=segments_lin,
@@ -1429,6 +1454,7 @@ def get_bokeh_html(
         const mode = plot_mode_source.data.value[0];
         const isFullScatter = mode.startsWith("Full Scatter");
         const focus = focus_source.data.value[0];
+        const layerOrderTopFirst = layer_order_source.data.order || renderer_slugs.map((_, index) => index);
         let blocked = false;
 
         for (let sourceIndex = 0; sourceIndex < sources.length; sourceIndex++) {
@@ -1488,7 +1514,7 @@ def get_bokeh_html(
         function applyFocusLayer(fig, segments, circles) {
             const dataRenderers = segments.concat(circles);
             const kept = fig.renderers.filter((renderer) => !dataRenderers.includes(renderer));
-            const order = renderer_slugs.map((_, index) => index);
+            const order = layerOrderTopFirst.slice().reverse();
             if (focus !== "All") {
                 const focusIndex = renderer_slugs.indexOf(focus);
                 if (focusIndex >= 0) {
@@ -1512,6 +1538,7 @@ def get_bokeh_html(
     """)
     plot_mode_source.js_on_change('data', mode_focus_callback)
     focus_source.js_on_change('data', mode_focus_callback)
+    layer_order_source.js_on_change('data', mode_focus_callback)
 
     # Compose layout
     left_controls = row(x_dropdown, y_dropdown, spacing=12)
@@ -1531,6 +1558,8 @@ def get_bokeh_html(
             "plot_mode": plot_mode_source.id,
             "focus": focus_source.id,
         },
+        "layerOrderSourceId": layer_order_source.id,
+        "defaultLayerOrderTopFirst": initial_layer_order_top_first,
     }
     interaction_script = f"""
 <script>
@@ -1599,6 +1628,227 @@ def get_bokeh_html(
         }}
     }}
 
+    function getLegendRowsForCount(itemCount, rowCount) {{
+        if (itemCount <= 0 || rowCount <= 0) {{
+            return [];
+        }}
+        if (itemCount % 2 === 1) {{
+            const high = Math.ceil(itemCount / rowCount);
+            const low = Math.floor(itemCount / rowCount);
+            const highCount = itemCount - low * rowCount;
+            return Array(highCount).fill(high).concat(Array(rowCount - highCount).fill(low));
+        }}
+
+        const candidates = [];
+        function collect(prefix, remaining, slots, maxNext) {{
+            if (slots === 0) {{
+                if (remaining === 0) {{
+                    candidates.push(prefix);
+                }}
+                return;
+            }}
+            for (let size = Math.min(maxNext, remaining); size >= 1; size--) {{
+                const rest = remaining - size;
+                if (rest < slots - 1 || rest > (slots - 1) * size) {{
+                    continue;
+                }}
+                collect(prefix.concat([size]), rest, slots - 1, size);
+            }}
+        }}
+        collect([], itemCount, rowCount, itemCount);
+        const parityMatched = candidates.filter(function(rows) {{
+            return rows.every(function(size) {{
+                return (size - rows[0]) % 2 === 0;
+            }});
+        }});
+        const usable = parityMatched.length ? parityMatched : candidates;
+        usable.sort(function(a, b) {{
+            const rangeA = Math.max(...a) - Math.min(...a);
+            const rangeB = Math.max(...b) - Math.min(...b);
+            if (rangeA !== rangeB) {{
+                return rangeA - rangeB;
+            }}
+            for (let i = 0; i < Math.min(a.length, b.length); i++) {{
+                if (a[i] !== b[i]) {{
+                    return b[i] - a[i];
+                }}
+            }}
+            return 0;
+        }});
+        return usable[0] || [];
+    }}
+
+    function getLegendItemWidths(items) {{
+        return items.map(function(item) {{
+            const style = window.getComputedStyle(item);
+            return item.getBoundingClientRect().width
+                + parseFloat(style.marginLeft || 0)
+                + parseFloat(style.marginRight || 0);
+        }});
+    }}
+
+    function getAlignedGridWidth(widths, rowSizes, gap) {{
+        const maxColumns = Math.max(...rowSizes);
+        const columnWidths = Array(maxColumns).fill(0);
+        let start = 0;
+        for (const size of rowSizes) {{
+            const sidePadding = (maxColumns - size) / 2;
+            for (let i = 0; i < size; i++) {{
+                const column = sidePadding + i;
+                columnWidths[column] = Math.max(columnWidths[column], widths[start + i]);
+            }}
+            start += size;
+        }}
+        return columnWidths.reduce(function(total, value) {{
+            return total + value;
+        }}, 0) + Math.max(0, maxColumns - 1) * gap;
+    }}
+
+    function getRowGroups(rowSizes) {{
+        const groups = [];
+        for (const size of rowSizes) {{
+            const parity = size % 2;
+            const last = groups[groups.length - 1];
+            if (last && last.parity === parity) {{
+                last.sizes.push(size);
+            }} else {{
+                groups.push({{parity: parity, sizes: [size]}});
+            }}
+        }}
+        return groups;
+    }}
+
+    function getGroupedGridWidth(widths, rowSizes, gap) {{
+        const groups = getRowGroups(rowSizes);
+        let maxWidth = 0;
+        let start = 0;
+        for (const group of groups) {{
+            const groupItemCount = group.sizes.reduce(function(total, value) {{
+                return total + value;
+            }}, 0);
+            const groupWidth = getAlignedGridWidth(
+                widths.slice(start, start + groupItemCount),
+                group.sizes,
+                gap
+            );
+            maxWidth = Math.max(maxWidth, groupWidth);
+            start += groupItemCount;
+        }}
+        return maxWidth;
+    }}
+
+    function chooseLegendRows(items, widths, availableWidth, gap) {{
+        const itemCount = items.length;
+        if (itemCount === 0) {{
+            return [];
+        }}
+        for (let rowCount = 1; rowCount <= itemCount; rowCount++) {{
+            const rowSizes = getLegendRowsForCount(itemCount, rowCount);
+            if (!rowSizes.length) {{
+                continue;
+            }}
+            const requiredWidth = getGroupedGridWidth(widths, rowSizes, gap);
+            if (requiredWidth <= availableWidth || rowCount === itemCount) {{
+                return rowSizes;
+            }}
+        }}
+        return Array(itemCount).fill(1);
+    }}
+
+    function renderLegendRows(root, itemRoot, items, rowSizes) {{
+        itemRoot.innerHTML = "";
+        itemRoot.style.display = "flex";
+        itemRoot.style.flexDirection = "column";
+        itemRoot.style.justifyContent = "center";
+        itemRoot.style.alignItems = "stretch";
+        itemRoot.style.gap = "8px";
+        itemRoot.style.width = "100%";
+
+        const groups = getRowGroups(rowSizes);
+        let index = 0;
+        for (const group of groups) {{
+            const maxColumns = Math.max(...group.sizes);
+            const groupRoot = document.createElement("div");
+            groupRoot.style.display = "grid";
+            groupRoot.style.gridTemplateColumns = `repeat(${{maxColumns}}, max-content)`;
+            groupRoot.style.justifyContent = "center";
+            groupRoot.style.alignItems = "center";
+            groupRoot.style.columnGap = "22px";
+            groupRoot.style.rowGap = "8px";
+            groupRoot.style.width = "100%";
+
+            for (const size of group.sizes) {{
+                const sidePadding = (maxColumns - size) / 2;
+                for (let i = 0; i < sidePadding; i++) {{
+                    const spacer = document.createElement("span");
+                    spacer.setAttribute("aria-hidden", "true");
+                    groupRoot.appendChild(spacer);
+                }}
+                for (let i = 0; i < size; i++) {{
+                    groupRoot.appendChild(items[index]);
+                    index++;
+                }}
+                for (let i = 0; i < sidePadding; i++) {{
+                    const spacer = document.createElement("span");
+                    spacer.setAttribute("aria-hidden", "true");
+                    groupRoot.appendChild(spacer);
+                }}
+            }}
+            itemRoot.appendChild(groupRoot);
+        }}
+        for (let index = 0; index < legendState.length; index++) {{
+            setLegendButtonState(index, legendState[index]);
+        }}
+    }}
+
+    function layoutPlotLegends() {{
+        for (const root of queryAll(".exomolhr-plot-legend")) {{
+            const itemRoot = root.querySelector("[data-legend-items]");
+            if (!itemRoot) {{
+                continue;
+            }}
+            const items = Array.from(itemRoot.querySelectorAll("[data-legend-index]"))
+                .sort(function(a, b) {{
+                    return Number(a.dataset.legendIndex) - Number(b.dataset.legendIndex);
+                }});
+            if (!items.length) {{
+                continue;
+            }}
+            const rootStyle = window.getComputedStyle(root);
+            const availableWidth = Math.max(
+                0,
+                root.getBoundingClientRect().width
+                    - parseFloat(rootStyle.paddingLeft || 0)
+                    - parseFloat(rootStyle.paddingRight || 0)
+            );
+            if (availableWidth < 1) {{
+                continue;
+            }}
+            const widths = getLegendItemWidths(items);
+            const rowSizes = chooseLegendRows(items, widths, availableWidth, 22);
+            renderLegendRows(root, itemRoot, items, rowSizes);
+        }}
+    }}
+
+    let legendLayoutTimer = null;
+    function scheduleLegendLayout() {{
+        window.clearTimeout(legendLayoutTimer);
+        legendLayoutTimer = window.setTimeout(layoutPlotLegends, 50);
+    }}
+
+    function legendButtonFromEvent(event) {{
+        const path = event.composedPath ? event.composedPath() : [];
+        for (const node of path) {{
+            if (node && node.dataset && node.dataset.legendIndex !== undefined) {{
+                return node;
+            }}
+        }}
+        if (event.target && event.target.closest) {{
+            return event.target.closest("[data-legend-index]");
+        }}
+        return null;
+    }}
+
     function toggleLegend(index) {{
         const visible = !legendState[index];
         legendState[index] = visible;
@@ -1612,6 +1862,7 @@ def get_bokeh_html(
             const renderer = getBokehModel(id);
             if (renderer) {{
                 renderer.visible = visible;
+                renderer.change.emit();
             }}
         }}
         setLegendButtonState(index, visible);
@@ -1621,18 +1872,12 @@ def get_bokeh_html(
         let found = false;
         for (const button of queryAll("[data-legend-index]")) {{
             found = true;
-            if (button.dataset.exomolhrLegendBound === "true") {{
-                continue;
-            }}
-            button.dataset.exomolhrLegendBound = "true";
-            button.addEventListener("click", function(event) {{
-                event.preventDefault();
-                event.stopPropagation();
-                toggleLegend(Number(button.dataset.legendIndex));
-            }});
         }}
         for (let index = 0; index < legendState.length; index++) {{
             setLegendButtonState(index, legendState[index]);
+        }}
+        if (found) {{
+            scheduleLegendLayout();
         }}
         return found;
     }}
@@ -1646,6 +1891,87 @@ def get_bokeh_html(
                 }}
             }}
         }}
+    }}
+
+    function updateLayerOrderFromMenu(menu) {{
+        const source = getBokehModel(config.layerOrderSourceId);
+        if (!source) {{
+            return;
+        }}
+        const order = Array.from(menu.querySelectorAll("[data-layer-index]"))
+            .map((button) => Number(button.dataset.layerIndex))
+            .filter((index) => Number.isInteger(index));
+        source.setv({{data: {{order: order}}}});
+        source.change.emit();
+    }}
+
+    function resetLayerOrderToDefault(menu) {{
+        const source = getBokehModel(config.layerOrderSourceId);
+        const defaultOrder = config.defaultLayerOrderTopFirst.slice();
+        if (source) {{
+            source.setv({{data: {{order: defaultOrder}}}});
+            source.change.emit();
+        }}
+        const allButton = menu.querySelector("[data-dropdown-value='All']");
+        if (allButton) {{
+            menu.appendChild(allButton);
+        }}
+        for (const index of defaultOrder) {{
+            const item = menu.querySelector(`[data-layer-index="${{index}}"]`);
+            if (item) {{
+                menu.appendChild(item);
+            }}
+        }}
+        if (allButton) {{
+            menu.insertBefore(allButton, menu.firstChild);
+        }}
+    }}
+
+    function bindLayerDragging(menu) {{
+        if (menu.dataset.exomolhrLayerDragBound === "true") {{
+            return;
+        }}
+        menu.dataset.exomolhrLayerDragBound = "true";
+        let dragged = null;
+        let draggedRecently = false;
+
+        for (const item of menu.querySelectorAll("[data-layer-index]")) {{
+            item.addEventListener("dragstart", function(event) {{
+                dragged = item;
+                item.style.opacity = "0.45";
+                event.dataTransfer.effectAllowed = "move";
+                event.dataTransfer.setData("text/plain", item.dataset.layerIndex);
+            }});
+
+            item.addEventListener("dragend", function() {{
+                item.style.opacity = "1";
+                dragged = null;
+                draggedRecently = true;
+                setTimeout(function() {{
+                    draggedRecently = false;
+                }}, 0);
+            }});
+
+            item.addEventListener("dragover", function(event) {{
+                event.preventDefault();
+                event.dataTransfer.dropEffect = "move";
+            }});
+
+            item.addEventListener("drop", function(event) {{
+                event.preventDefault();
+                event.stopPropagation();
+                if (!dragged || dragged === item) {{
+                    return;
+                }}
+                const rect = item.getBoundingClientRect();
+                const after = event.clientY > rect.top + rect.height / 2;
+                menu.insertBefore(dragged, after ? item.nextSibling : item);
+                updateLayerOrderFromMenu(menu);
+            }});
+        }}
+        menu.exomolhrWasLayerDragged = function() {{
+            return draggedRecently;
+        }};
     }}
 
     function bindHtmlDropdowns() {{
@@ -1664,6 +1990,9 @@ def get_bokeh_html(
                 continue;
             }}
             dropdown.dataset.exomolhrDropdownBound = "true";
+            if (key === "focus") {{
+                bindLayerDragging(menu);
+            }}
 
             toggle.addEventListener("click", function(event) {{
                 event.preventDefault();
@@ -1677,10 +2006,17 @@ def get_bokeh_html(
                 button.addEventListener("click", function(event) {{
                     event.preventDefault();
                     event.stopPropagation();
+                    if (menu.exomolhrWasLayerDragged && menu.exomolhrWasLayerDragged()) {{
+                        return;
+                    }}
                     const source = getBokehModel(sourceId);
                     if (source) {{
                         source.setv({{data: {{value: [button.dataset.dropdownValue]}}}});
                         source.change.emit();
+                        scheduleLegendLayout();
+                    }}
+                    if (key === "focus" && button.dataset.dropdownValue === "All") {{
+                        resetLayerOrderToDefault(menu);
                     }}
                     label.innerHTML = button.innerHTML;
                     menu.style.display = "none";
@@ -1691,6 +2027,14 @@ def get_bokeh_html(
     }}
 
     document.addEventListener("click", function(event) {{
+        const legendButton = legendButtonFromEvent(event);
+        if (legendButton) {{
+            event.preventDefault();
+            event.stopPropagation();
+            toggleLegend(Number(legendButton.dataset.legendIndex));
+            return;
+        }}
+
         const path = event.composedPath ? event.composedPath() : [];
         for (const dropdown of queryAll(".exomolhr-html-dropdown")) {{
             if (!dropdown.contains(event.target) && !path.includes(dropdown)) {{
@@ -1701,6 +2045,8 @@ def get_bokeh_html(
             }}
         }}
     }});
+
+    window.addEventListener("resize", scheduleLegendLayout);
 
     function bindWhenReady(attempt) {{
         const legendReady = bindLegendButtons();

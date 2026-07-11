@@ -119,29 +119,39 @@
         padding: 0;
     }
     .table-box {
+        --table-scrollbar-width: 8px;
+        --table-header-mask-height: 96px;
+        --select-column-width: 104px;
+        position: relative;
         border-radius: 15px;
         border: 2px solid #addb8edb;
         background: rgba(255, 255, 255, 0.8);
         box-shadow: 0 4px 6px rgba(0,0,0,0.05);
         overflow: hidden;
     }
-    
-    .table-scroll-head {
-        background: linear-gradient(135deg, #addb8edb, #83b0e1);
-        border-bottom: none;
-        padding-right: 9px; /* Compensate for the body scrollbar */
+    .table-box::after {
+        content: '';
+        position: absolute;
+        top: 0;
+        right: 0;
+        width: var(--table-scrollbar-width);
+        height: var(--table-header-mask-height);
+        background: #83b0e1;
+        pointer-events: none;
+        z-index: 20;
     }
     
     .table-scroll-body {
         max-height: 520px;
         overflow-y: scroll;
+        overflow-x: hidden;
         /* native scrollbar styling */
         scrollbar-width: thin;
         scrollbar-color: rgba(173, 219, 142, 0.95) transparent;
     }
 
     .table-scroll-body::-webkit-scrollbar {
-        width: 9px;
+        width: var(--table-scrollbar-width);
         height: 8px;
     }
     .table-scroll-body::-webkit-scrollbar-thumb {
@@ -164,8 +174,11 @@
         border-spacing: 0;
     }
     .table-custom thead th {
+        position: sticky;
+        top: 0;
+        z-index: 5;
         border: none !important;
-        background: linear-gradient(135deg, #addb8edb, #83b0e1);
+        background: linear-gradient(135deg, #addb8e, #83b0e1);
         font-weight: 800;
         color: white;
         letter-spacing: 1px;
@@ -193,6 +206,23 @@
     
     .table-custom tbody td.col-divider {
         border-right: none !important;
+    }
+    .table-custom col.select-col {
+        width: var(--select-column-width);
+    }
+    .table-custom th.select-col,
+    .table-custom td.select-col {
+        width: var(--select-column-width);
+        min-width: var(--select-column-width);
+        max-width: var(--select-column-width);
+        padding-left: 0;
+        padding-right: 0;
+        text-align: center;
+        vertical-align: middle;
+    }
+    .table-custom th.select-col label {
+        line-height: 1.25;
+        white-space: normal;
     }
     
     .table-custom tbody tr:last-child td {
@@ -396,44 +426,34 @@
 
             <div class="table-container">
                 <div class="table-box">
-                    <div class="table-scroll-head">
-                        <table class="table align-middle mx-auto table-custom m-0" style="table-layout: fixed; border-collapse: collapse;">
+                    <div class="table-scroll-body">
+                        <table class="table align-middle mx-auto table-custom m-0" id="dataTable" style="table-layout: fixed;">
                             <colgroup>
                                 <col style="width: 17%;">
                                 <col style="width: 48%;">
                                 <col style="width: 20%;">
-                                <col style="width: 15%;">
+                                <col class="select-col">
                             </colgroup>
                             <thead>
                                 <tr>
                                     <th class="col-divider">MOLECULE</th>
                                     <th>MOLECULE NAME</th>
                                     <th>MASS (Da)</th>
-                                    <th class="text-center" style="vertical-align: middle;">
-                                        <label for="select-all" class="d-block mb-1" style="font-size: 0.85rem; cursor:pointer;">SELECT ALL</label>
+                                    <th class="text-center select-col" style="vertical-align: middle;">
+                                        <label for="select-all" class="d-block mb-1" style="font-size: 0.85rem; cursor:pointer;">SELECT<br>ALL</label>
                                         <div class="checkbox-wrapper">
                                             <input id="select-all" type="checkbox" name="select-all" value="select-all"/>
                                         </div>
                                     </th>
                                 </tr>
                             </thead>
-                        </table>
-                    </div>
-                    <div class="table-scroll-body">
-                        <table class="table align-middle mx-auto table-custom m-0" id="dataTable" style="table-layout: fixed; border-collapse: collapse;">
-                            <colgroup>
-                                <col style="width: 17%;">
-                                <col style="width: 48%;">
-                                <col style="width: 20%;">
-                                <col style="width: 15%;">
-                            </colgroup>
                             <tbody>
                                 {% for molecule in molecules %}
                                 <tr>
                                     <td class="font-weight-bold col-divider" style="font-size: 1.25rem;">{{ molecule.html|safe }}</td>
                                     <td>{{ molecule.names }}</td>  
                                     <td>{{ molecule.mass|stringformat:".3f" }}</td>
-                                    <td class="text-center" style="vertical-align: middle;">
+                                    <td class="text-center select-col" style="vertical-align: middle;">
                                         <div class="checkbox-wrapper">
                                             <input class="molecule-checkbox" type="checkbox" name="molecule" value="{{ molecule.slug }}">
                                         </div>
@@ -464,7 +484,6 @@
         var moleculeNameSearchInput = document.getElementById("moleculeNameSearchInput");
         var moleculeNameSearchButton = document.getElementById("moleculeNameSearchButton");
         var tableBody = document.querySelector("#dataTable tbody");
-        var tableHeader = document.querySelector("#dataTable thead");
 
         var selectAllCheckbox = document.getElementById("select-all");
         var alphaButtons = document.querySelectorAll(".alpha-btn");

@@ -120,29 +120,39 @@
         padding: 0;
     }
     .table-box {
+        --table-scrollbar-width: 8px;
+        --table-header-mask-height: 96px;
+        --select-column-width: 104px;
+        position: relative;
         border-radius: 15px;
         border: 2px solid #addb8edb;
         background: rgba(255, 255, 255, 0.8);
         box-shadow: 0 4px 6px rgba(0,0,0,0.05);
         overflow: hidden;
     }
-    
-    .table-scroll-head {
-        background: linear-gradient(135deg, #addb8edb, #83b0e1);
-        border-bottom: none;
-        padding-right: 9px; /* Compensate for the body scrollbar */
+    .table-box::after {
+        content: '';
+        position: absolute;
+        top: 0;
+        right: 0;
+        width: var(--table-scrollbar-width);
+        height: var(--table-header-mask-height);
+        background: #83b0e1;
+        pointer-events: none;
+        z-index: 20;
     }
     
     .table-scroll-body {
         max-height: 520px;
         overflow-y: scroll;
+        overflow-x: hidden;
         /* native scrollbar styling */
         scrollbar-width: thin;
         scrollbar-color: rgba(173, 219, 142, 0.95) transparent;
     }
 
     .table-scroll-body::-webkit-scrollbar {
-        width: 9px;
+        width: var(--table-scrollbar-width);
         height: 8px;
     }
     .table-scroll-body::-webkit-scrollbar-thumb {
@@ -165,8 +175,11 @@
         border-spacing: 0;
     }
     .table-custom thead th {
+        position: sticky;
+        top: 0;
+        z-index: 5;
         border: none !important;
-        background: linear-gradient(135deg, #addb8edb, #83b0e1);
+        background: linear-gradient(135deg, #addb8e, #83b0e1);
         font-weight: 800;
         color: white;
         letter-spacing: 1px;
@@ -194,6 +207,23 @@
     
     .table-custom tbody td.col-divider {
         border-right: none !important;
+    }
+    .table-custom col.select-col {
+        width: var(--select-column-width);
+    }
+    .table-custom th.select-col,
+    .table-custom td.select-col {
+        width: var(--select-column-width);
+        min-width: var(--select-column-width);
+        max-width: var(--select-column-width);
+        padding-left: 0;
+        padding-right: 0;
+        text-align: center;
+        vertical-align: middle;
+    }
+    .table-custom th.select-col label {
+        line-height: 1.25;
+        white-space: normal;
     }
     
     .table-custom tbody tr:last-child td {
@@ -410,8 +440,8 @@
 
         
             <div class="table-box">
-                    <div class="table-scroll-head">
-                        <table class="table align-middle mx-auto table-custom m-0" style="table-layout: fixed; border-collapse: collapse;">
+                    <div class="table-scroll-body">
+                        <table class="table align-middle mx-auto table-custom m-0" id="dataTable" style="table-layout: fixed;">
                             <colgroup>
                                 <col style="width: 15%;">
                                 <col style="width: 20%;">
@@ -419,7 +449,7 @@
                                 <col style="width: 11%;">
                                 <col style="width: 25%;">
                                 <col style="width: 9%;">
-                                <col style="width: 9%;">
+                                <col class="select-col">
                             </colgroup>
                             <thead>
                                 <tr>
@@ -429,28 +459,14 @@
                                     <th><i>T</i><sub>max</sub><br>(K)</th>
                                     <th>PARTITION<br>FUNCTION</th>
                                     <th>CSV<br>296K</th>
-                                    <th class="text-center" style="vertical-align: middle;">
-                                        <label for="select-all" class="d-block mb-1" style="font-size: 0.85rem; cursor:pointer;">SELECT ALL</label>
+                                    <th class="text-center select-col" style="vertical-align: middle;">
+                                        <label for="select-all" class="d-block mb-1" style="font-size: 0.85rem; cursor:pointer;">SELECT<br>ALL</label>
                                         <div class="checkbox-wrapper">
                                             <input id="select-all" type="checkbox" name="select-all" value="select-all"/>
                                         </div>
                                     </th>
                                 </tr>
                             </thead>
-                        </table>
-                    </div>
-                
-                    <div class="table-scroll-body">
-                        <table class="table align-middle mx-auto table-custom m-0" id="dataTable" style="table-layout: fixed; border-collapse: collapse;">
-                            <colgroup>
-                                <col style="width: 15%;">
-                                <col style="width: 20%;">
-                                <col style="width: 11%;">
-                                <col style="width: 11%;">
-                                <col style="width: 25%;">
-                                <col style="width: 9%;">
-                                <col style="width: 9%;">
-                            </colgroup>
 
                     {% regroup isos by molecule as molecule_list %}
                     {% for molecule in molecule_list %}
@@ -489,7 +505,7 @@
                                 </span>
                                 {% endif %}
                             </td>
-                            <td class="text-center">
+                            <td class="text-center select-col">
                                 <div class="checkbox-wrapper">
                                     <input class="iso-checkbox {{ molecule.grouper.slug }}-checkbox" type="checkbox" name="iso" value="{{ iso.slug }}">
                                 </div>
@@ -511,7 +527,6 @@
         var nisosSelected = 0;
         var selectedIsotopologues = [];
         var selectedIsotopologuesElement = document.getElementById("selectedIsotopologues");
-        var MAX_SELECTED_ISOS = 30;
         var allSelected = false;
         var moleculeCheckboxes = document.querySelectorAll("input.molecule-checkbox");
         var isoCheckboxes = document.querySelectorAll("input.iso-checkbox");
@@ -536,15 +551,9 @@
         
         function selectAll() {
             var visibleIsos = tableBody.querySelectorAll("tr:not([style*='display: none']) .iso-checkbox");
-            var hitLimit = false;
             
-            // Recompute from visible only
             visibleIsos.forEach(function(isoCheckbox) {
                 if(!isoCheckbox.checked) {
-                    if (nisosSelected >= MAX_SELECTED_ISOS) {
-                        hitLimit = true;
-                        return;
-                    }
                     var isotopologueSlug = isoCheckbox.value;
                     var isoHtml = document.querySelector(`.iso-html-val[data-slug='${isotopologueSlug}']`).innerHTML.trim();
                     
@@ -559,9 +568,6 @@
                     isoCheckbox.checked = true;
                 }
             });
-            if (hitLimit) {
-                alert('You can select at most ' + MAX_SELECTED_ISOS + ' isotopologues at a time.');
-            }
             updateMoleculeCheckboxesByRow();
             updateSelectionDisplay();
         }
@@ -632,17 +638,11 @@
         function selectAllIsotopologuesOfMolecule(molecule_slug) {
             var moleculeCheckbox = document.getElementById(molecule_slug + "-checkbox");
             moleculeCheckbox.checked = true;
-            var hitLimit = false;
             document.querySelectorAll("input." + molecule_slug + "-checkbox").forEach(function(isoCheckbox) {
                 if (!isoCheckbox.checked) {
-                    if (!selectIso(isoCheckbox, false)) {
-                        hitLimit = true;
-                    }
+                    selectIso(isoCheckbox);
                 }
             });
-            if (hitLimit) {
-                alert('You can select at most ' + MAX_SELECTED_ISOS + ' isotopologues at a time.');
-            }
             updateMoleculeCheckboxesByRow();
         }
 
@@ -666,17 +666,9 @@
             });
         });
 
-        function selectIso(isoCheckbox, showAlert = true) {
+        function selectIso(isoCheckbox) {
                 var isotopologueSlug = isoCheckbox.value;
                 var alreadySelected = selectedIsotopologues.some(obj => obj.slug === isotopologueSlug);
-                if (!alreadySelected && nisosSelected >= MAX_SELECTED_ISOS) {
-                    isoCheckbox.checked = false;
-                    if (showAlert) {
-                        alert('You can select at most ' + MAX_SELECTED_ISOS + ' isotopologues at a time.');
-                    }
-                    updateSelectAllCheckbox();
-                    return false;
-                }
                 isoCheckbox.checked = true;
                 var isoHtml = document.querySelector(`.iso-html-val[data-slug='${isotopologueSlug}']`).innerHTML.trim();
                 

@@ -71,6 +71,11 @@
                 href="{% url 'linelist:about' %}">About</a>
             </li>
             <li class="nav-item">
+                <a class="nav-link {% if request.resolver_match.url_name == 'software' %}active{% endif %}"
+                {% if request.resolver_match.url_name == 'software' %}aria-current="true"{% endif %}
+                href="https://github.com/Beryl-Jingxin/PyExoCross">Software</a>
+            </li>
+            <li class="nav-item">
                 <a class="nav-link {% if request.resolver_match.url_name == 'api' %}active{% endif %}"
                 {% if request.resolver_match.url_name == 'api' %}aria-current="true"{% endif %}
                 href="{% url 'linelist:api' %}">API</a>
