@@ -11,6 +11,7 @@ from django.conf import settings
 from django.utils.datastructures import MultiValueDictKeyError
 
 import logging
+import json
 import re
 import os
 import numpy as np
@@ -18,10 +19,9 @@ import pandas as pd
 import bokeh.plotting as bp
 from bokeh.plotting import curdoc
 from bokeh.embed import components
-from bokeh.models import ColumnDataSource, Range1d, LogScale, LinearScale, LinearAxis, Select, FixedTicker, BasicTickFormatter, Div, SaveTool
+from bokeh.models import ColumnDataSource, Range1d, LogScale, LinearScale, LinearAxis, FixedTicker, BasicTickFormatter, Div, SaveTool
 from bokeh.models.callbacks import CustomJS
 from bokeh.models import CustomJSTickFormatter
-from bokeh.events import DocumentReady
 from bokeh.layouts import column, row, Spacer
 # from bokeh.palettes import Bright
 
@@ -189,6 +189,49 @@ def make_html_plot_legend(iso_slugs, iso_html_by_slug, color_list, kind):
         + "".join(items)
         + "</div>"
     )
+
+
+def make_html_dropdown(title, options, selected_value, dropdown_key):
+    option_buttons = []
+    for value, label in options:
+        option_buttons.append(
+            (
+                "<button type='button' data-dropdown-value='{value}' "
+                "style='display:block;width:100%;box-sizing:border-box;padding:7px 10px;border:0;"
+                "background:white;color:#333;text-align:center;"
+                "font-family:\"Josefin Sans\", sans-serif;font-size:14px;cursor:pointer;white-space:nowrap;'>{label}</button>"
+            ).format(value=escape(value, quote=True), label=label)
+        )
+    selected_label = next((label for value, label in options if value == selected_value), selected_value)
+    return (
+        "<div class='exomolhr-html-dropdown' data-dropdown-key='{key}' "
+        "style='position:relative;width:180px;font-family:\"Josefin Sans\", sans-serif;color:#333;'>"
+        "<div style='display:block;width:100%;text-align:center;font-family:\"Josefin Sans\", sans-serif;font-size:14px;font-weight:700;margin-bottom:8px;color:#333;'>{title}</div>"
+        "<button type='button' data-dropdown-toggle='true' "
+        "style='display:block;width:180px;height:36px;box-sizing:border-box;padding:4px 28px 4px 10px;"
+        "border:1px solid #ccc;border-radius:4px;background:white;color:#333;"
+        "font-family:\"Josefin Sans\", sans-serif;font-size:14px;text-align:center;cursor:pointer;position:relative;line-height:1.2;'>"
+        "<span data-dropdown-label='true' "
+        "style='position:absolute;left:10px;right:28px;top:50%;transform:translateY(-50%);text-align:center;white-space:nowrap;'>{selected_label}</span>"
+        "<span aria-hidden='true' style='position:absolute;right:10px;top:50%;transform:translateY(-50%);font-size:11px;'>▼</span>"
+        "</button>"
+        "<div data-dropdown-menu='true' "
+        "style='display:none;position:absolute;z-index:1000;right:0;top:100%;width:180px;box-sizing:border-box;max-height:260px;"
+        "overflow:auto;margin-top:4px;padding:4px 0;border:1px solid #ccc;border-radius:4px;background:white;'>"
+        + "".join(option_buttons)
+        + "</div></div>"
+    ).format(
+        key=escape(dropdown_key, quote=True),
+        title=escape(title),
+        selected_label=selected_label,
+    )
+
+
+def make_html_focus_dropdown(iso_slugs, iso_html_by_slug):
+    options = [("All", "All")]
+    for slug in iso_slugs:
+        options.append((slug, iso_html_by_slug.get(slug, iso_slug_to_formula_html(slug))))
+    return make_html_dropdown("Highlight Isotopologue", options, "All", "focus")
 
 
 def format_plot_range_value(value):
@@ -1200,100 +1243,18 @@ def get_bokeh_html(
         disable_math=True,
         visible=False,
     )
-    top_legend_log.js_on_event(DocumentReady, CustomJS(args=dict(
-        segments_log=segments_by_iso_log,
-        segments_lin=segments_by_iso_lin,
-        circles_log=circles_by_iso_log,
-        circles_lin=circles_by_iso_lin,
-    ), code="""
-        window.exomolhrPlotLegendState = window.exomolhrPlotLegendState || Array(segments_log.length).fill(true);
-
-        function collectRoots() {
-            const roots = [document];
-            const nodes = document.querySelectorAll('*');
-            for (const node of nodes) {
-                if (node.shadowRoot) {
-                    roots.push(node.shadowRoot);
-                }
-            }
-            return roots;
-        }
-
-        function setLegendButtonState(index, visible) {
-            for (const root of collectRoots()) {
-                const buttons = root.querySelectorAll(`[data-legend-index="${index}"]`);
-                for (const button of buttons) {
-                    button.style.opacity = visible ? "1" : "0.35";
-                    button.style.textDecoration = visible ? "none" : "line-through";
-                }
-            }
-        }
-
-        function bindLegendButtons() {
-            for (const root of collectRoots()) {
-                const buttons = root.querySelectorAll("[data-legend-index]");
-                for (const button of buttons) {
-                    if (button.dataset.exomolhrLegendBound === "true") {
-                        continue;
-                    }
-                    button.dataset.exomolhrLegendBound = "true";
-                    button.addEventListener("click", function(event) {
-                        event.preventDefault();
-                        window.exomolhrPlotLegendToggle(Number(button.dataset.legendIndex));
-                    });
-                }
-            }
-        }
-
-        window.exomolhrPlotLegendToggle = function(index) {
-            const visible = !window.exomolhrPlotLegendState[index];
-            window.exomolhrPlotLegendState[index] = visible;
-            const renderers = [
-                segments_log[index], segments_lin[index],
-                circles_log[index], circles_lin[index],
-            ];
-            for (const renderer of renderers) {
-                renderer.visible = visible;
-            }
-            setLegendButtonState(index, visible);
-        };
-
-        bindLegendButtons();
-        for (let index = 0; index < segments_log.length; index++) {
-            setLegendButtonState(index, window.exomolhrPlotLegendState[index]);
-        }
-    """))
-
-    # --- Controls ---
-    centered_select_stylesheet = """
-        label {
-            display: block;
-            text-align: center;
-            width: 100%;
-            margin-bottom: 8px;
-            font-size: 13px;
-        }
-        select {
-            text-align: center;
-            text-align-last: center;
-            font-size: 13px;
-        }
-        option {
-            text-align: center;
-            font-size: 13px;
-        }
-    """
 
     # Y-axis scale selector (toggles figure visibility)
-    y_select = Select(
-        title="Y Scale", value="Log",
-        options=["Log", "Linear"], width=100,
-        stylesheets=[centered_select_stylesheet],
+    y_scale_source = ColumnDataSource(data=dict(value=["Log"]))
+    y_dropdown = Div(
+        text=make_html_dropdown("Y Scale", [("Log", "Log"), ("Linear", "Linear")], "Log", "y_scale"),
+        width=180,
+        disable_math=True,
     )
     y_callback = CustomJS(args=dict(
         fig_log=fig_log, fig_lin=fig_lin
     ), code="""
-        if (cb_obj.value === "Log") {
+        if (cb_obj.data.value[0] === "Log") {
             fig_log.visible = true;
             fig_lin.visible = false;
         } else {
@@ -1301,14 +1262,23 @@ def get_bokeh_html(
             fig_lin.visible = true;
         }
     """)
-    y_select.js_on_change('value', y_callback)
+    y_scale_source.js_on_change('data', y_callback)
 
     # X-axis unit selector (updates both figures)
-    x_select = Select(
-        title="X Unit", value=default_x_unit,
-        options=["Wavenumber (cm⁻¹)", "Wavelength (nm)", "Wavelength (μm)"],
+    x_unit_source = ColumnDataSource(data=dict(value=[default_x_unit]))
+    x_dropdown = Div(
+        text=make_html_dropdown(
+            "X Unit",
+            [
+                ("Wavenumber (cm⁻¹)", "Wavenumber (cm⁻¹)"),
+                ("Wavelength (nm)", "Wavelength (nm)"),
+                ("Wavelength (μm)", "Wavelength (μm)"),
+            ],
+            default_x_unit,
+            "x_unit",
+        ),
         width=180,
-        stylesheets=[centered_select_stylesheet],
+        disable_math=True,
     )
     x_callback = CustomJS(args=dict(
         sources=all_sources,
@@ -1328,7 +1298,7 @@ def get_bokeh_html(
         filename_um_stick=plot_download_filenames["um_stick"],
         filename_um_scatter=plot_download_filenames["um_scatter"],
     ), code="""
-        const unit = cb_obj.value;
+        const unit = cb_obj.data.value[0];
         const isScatter = save_tool_log.filename.endsWith("__scatter.png");
         let saveFilename = isScatter ? filename_wn_scatter : filename_wn_stick;
         for (const source of sources) {
@@ -1377,13 +1347,13 @@ def get_bokeh_html(
         }
         mode_src.change.emit();
     """)
-    x_select.js_on_change('value', x_callback)
+    x_unit_source.js_on_change('data', x_callback)
 
     full_warning = Div(
         text=(
             "<div style='padding:8px 10px;border-radius:6px;background:#fff3cd;"
-            "color:#664d03;border:1px solid #ffecb5;font-size:13px;'>"
-            f"Full scatter draws all available points up to {FULL_SCATTER_FORCE_LIMIT:,} points per iso. "
+            "color:#664d03;border:1px solid #ffecb5;font-size:14px;'>"
+            f"Full scatter draws all available points up to {FULL_SCATTER_FORCE_LIMIT:,} points per isotopologue. "
             f"Above {FULL_SCATTER_POINT_LIMIT:,} points per isotopologue it may render slowly; "
             f"above {FULL_SCATTER_FORCE_LIMIT:,}, that isotopologue is shown with Top-K instead. "
             "Zoom to a smaller range for true full scatter."
@@ -1393,16 +1363,33 @@ def get_bokeh_html(
         sizing_mode="stretch_width",
     )
 
-    plot_select = Select(
-        title="Plot Mode", value="Top-K Stick Spectra",
-        options=["Top-K Stick Spectra", "Full Scatter"], width=180,
-        stylesheets=[centered_select_stylesheet],
+    plot_mode_source = ColumnDataSource(data=dict(value=["Top-K Stick Spectra"]))
+    plot_dropdown = Div(
+        text=make_html_dropdown(
+            "Plot Mode",
+            [
+                ("Top-K Stick Spectra", "Top-K Stick Spectra"),
+                ("Full Scatter", "Full Scatter"),
+            ],
+            "Top-K Stick Spectra",
+            "plot_mode",
+        ),
+        width=180,
+        disable_math=True,
     )
-    focus_select = Select(
-        title="Highlight Isotopologue", value="All",
-        options=["All"] + list(iso_slugs), width=180,
-        stylesheets=[centered_select_stylesheet],
+    focus_source = ColumnDataSource(data=dict(value=["All"]))
+    focus_dropdown = Div(
+        text=make_html_focus_dropdown(iso_slugs, iso_formula_html_by_slug),
+        width=180,
+        disable_math=True,
     )
+    control_state_bridge = Div(text="", visible=False, width=0, height=0)
+    control_state_bridge.js_on_change("text", CustomJS(args=dict(
+        x_unit_source=x_unit_source,
+        y_scale_source=y_scale_source,
+        plot_mode_source=plot_mode_source,
+        focus_source=focus_source,
+    ), code=""))
 
     renderer_slugs = [iso_slugs[idx] for idx in plot_order]
     renderer_indices = plot_order[:]
@@ -1414,9 +1401,9 @@ def get_bokeh_html(
         full_counts=full_counts,
         fig_log=fig_log,
         fig_lin=fig_lin,
-        x_select=x_select,
-        plot_select=plot_select,
-        focus_select=focus_select,
+        x_unit_source=x_unit_source,
+        plot_mode_source=plot_mode_source,
+        focus_source=focus_source,
         full_warning=full_warning,
         segments_log=segments_log,
         segments_lin=segments_lin,
@@ -1438,10 +1425,10 @@ def get_bokeh_html(
         filename_um_scatter=plot_download_filenames["um_scatter"],
         log_baseline=max(float(Smin), 1e-35) * 0.5,
     ), code="""
-        const unit = x_select.value;
-        const mode = plot_select.value;
+        const unit = x_unit_source.data.value[0];
+        const mode = plot_mode_source.data.value[0];
         const isFullScatter = mode.startsWith("Full Scatter");
-        const focus = focus_select.value;
+        const focus = focus_source.data.value[0];
         let blocked = false;
 
         for (let sourceIndex = 0; sourceIndex < sources.length; sourceIndex++) {
@@ -1523,17 +1510,216 @@ def get_bokeh_html(
         applyFocusLayer(fig_log, segments_log, circles_log);
         applyFocusLayer(fig_lin, segments_lin, circles_lin);
     """)
-    plot_select.js_on_change('value', mode_focus_callback)
-    focus_select.js_on_change('value', mode_focus_callback)
+    plot_mode_source.js_on_change('data', mode_focus_callback)
+    focus_source.js_on_change('data', mode_focus_callback)
 
     # Compose layout
-    left_controls = row(x_select, y_select, spacing=12)
-    right_controls = row(plot_select, focus_select, spacing=12)
+    left_controls = row(x_dropdown, y_dropdown, spacing=12)
+    right_controls = row(plot_dropdown, focus_dropdown, spacing=12)
     controls = row(left_controls, Spacer(sizing_mode="stretch_width"), right_controls, sizing_mode="stretch_width")
-    layout = column(controls, full_warning, fig_log, fig_lin, top_legend_log, full_legend_log, sizing_mode="stretch_width")
+    layout = column(controls, control_state_bridge, full_warning, fig_log, fig_lin, top_legend_log, full_legend_log, sizing_mode="stretch_width")
 
     bokeh_script, bokeh_div = components(layout)
-    html = '<div class="bokeh-plot">' + bokeh_script + bokeh_div + "</div>"
+    interaction_config = {
+        "segmentLogIds": [renderer.id for renderer in segments_by_iso_log],
+        "segmentLinIds": [renderer.id for renderer in segments_by_iso_lin],
+        "circleLogIds": [renderer.id for renderer in circles_by_iso_log],
+        "circleLinIds": [renderer.id for renderer in circles_by_iso_lin],
+        "dropdownSourceIds": {
+            "x_unit": x_unit_source.id,
+            "y_scale": y_scale_source.id,
+            "plot_mode": plot_mode_source.id,
+            "focus": focus_source.id,
+        },
+    }
+    interaction_script = f"""
+<script>
+(function() {{
+    const config = {json.dumps(interaction_config)};
+    const legendState = Array(config.segmentLogIds.length).fill(true);
+
+    function collectRoots(root) {{
+        const roots = [root];
+        const nodes = root.querySelectorAll ? root.querySelectorAll("*") : [];
+        for (const node of nodes) {{
+            if (node.shadowRoot) {{
+                roots.push(...collectRoots(node.shadowRoot));
+            }}
+        }}
+        return roots;
+    }}
+
+    function allRoots() {{
+        return collectRoots(document);
+    }}
+
+    function queryAll(selector) {{
+        const matches = [];
+        for (const root of allRoots()) {{
+            matches.push(...root.querySelectorAll(selector));
+        }}
+        return matches;
+    }}
+
+    function queryOne(selector) {{
+        for (const root of allRoots()) {{
+            const match = root.querySelector(selector);
+            if (match) {{
+                return match;
+            }}
+        }}
+        return null;
+    }}
+
+    function getBokehModel(id) {{
+        if (!window.Bokeh || !window.Bokeh.documents) {{
+            return null;
+        }}
+        for (const doc of window.Bokeh.documents) {{
+            if (doc.get_model_by_id) {{
+                const model = doc.get_model_by_id(id);
+                if (model) {{
+                    return model;
+                }}
+            }}
+            if (doc._all_models && doc._all_models.get) {{
+                const model = doc._all_models.get(id);
+                if (model) {{
+                    return model;
+                }}
+            }}
+        }}
+        return null;
+    }}
+
+    function setLegendButtonState(index, visible) {{
+        for (const button of queryAll(`[data-legend-index="${{index}}"]`)) {{
+            button.style.opacity = visible ? "1" : "0.35";
+            button.style.textDecoration = visible ? "none" : "line-through";
+        }}
+    }}
+
+    function toggleLegend(index) {{
+        const visible = !legendState[index];
+        legendState[index] = visible;
+        const ids = [
+            config.segmentLogIds[index],
+            config.segmentLinIds[index],
+            config.circleLogIds[index],
+            config.circleLinIds[index],
+        ];
+        for (const id of ids) {{
+            const renderer = getBokehModel(id);
+            if (renderer) {{
+                renderer.visible = visible;
+            }}
+        }}
+        setLegendButtonState(index, visible);
+    }}
+
+    function bindLegendButtons() {{
+        let found = false;
+        for (const button of queryAll("[data-legend-index]")) {{
+            found = true;
+            if (button.dataset.exomolhrLegendBound === "true") {{
+                continue;
+            }}
+            button.dataset.exomolhrLegendBound = "true";
+            button.addEventListener("click", function(event) {{
+                event.preventDefault();
+                event.stopPropagation();
+                toggleLegend(Number(button.dataset.legendIndex));
+            }});
+        }}
+        for (let index = 0; index < legendState.length; index++) {{
+            setLegendButtonState(index, legendState[index]);
+        }}
+        return found;
+    }}
+
+    function closeOtherDropdowns(activeDropdown) {{
+        for (const dropdown of queryAll(".exomolhr-html-dropdown")) {{
+            if (dropdown !== activeDropdown) {{
+                const menu = dropdown.querySelector("[data-dropdown-menu]");
+                if (menu) {{
+                    menu.style.display = "none";
+                }}
+            }}
+        }}
+    }}
+
+    function bindHtmlDropdowns() {{
+        let count = 0;
+        for (const dropdown of queryAll(".exomolhr-html-dropdown")) {{
+            const key = dropdown.dataset.dropdownKey;
+            const sourceId = config.dropdownSourceIds[key];
+            const toggle = dropdown.querySelector("[data-dropdown-toggle]");
+            const menu = dropdown.querySelector("[data-dropdown-menu]");
+            const label = dropdown.querySelector("[data-dropdown-label]");
+            if (!sourceId || !toggle || !menu || !label) {{
+                continue;
+            }}
+            count += 1;
+            if (dropdown.dataset.exomolhrDropdownBound === "true") {{
+                continue;
+            }}
+            dropdown.dataset.exomolhrDropdownBound = "true";
+
+            toggle.addEventListener("click", function(event) {{
+                event.preventDefault();
+                event.stopPropagation();
+                const shouldOpen = menu.style.display !== "block";
+                closeOtherDropdowns(dropdown);
+                menu.style.display = shouldOpen ? "block" : "none";
+            }});
+
+            for (const button of menu.querySelectorAll("[data-dropdown-value]")) {{
+                button.addEventListener("click", function(event) {{
+                    event.preventDefault();
+                    event.stopPropagation();
+                    const source = getBokehModel(sourceId);
+                    if (source) {{
+                        source.setv({{data: {{value: [button.dataset.dropdownValue]}}}});
+                        source.change.emit();
+                    }}
+                    label.innerHTML = button.innerHTML;
+                    menu.style.display = "none";
+                }});
+            }}
+        }}
+        return count >= Object.keys(config.dropdownSourceIds).length;
+    }}
+
+    document.addEventListener("click", function(event) {{
+        const path = event.composedPath ? event.composedPath() : [];
+        for (const dropdown of queryAll(".exomolhr-html-dropdown")) {{
+            if (!dropdown.contains(event.target) && !path.includes(dropdown)) {{
+                const menu = dropdown.querySelector("[data-dropdown-menu]");
+                if (menu) {{
+                    menu.style.display = "none";
+                }}
+            }}
+        }}
+    }});
+
+    function bindWhenReady(attempt) {{
+        const legendReady = bindLegendButtons();
+        const dropdownsReady = bindHtmlDropdowns();
+        const modelsReady = Object.values(config.dropdownSourceIds).every((id) => getBokehModel(id) !== null);
+        if ((!legendReady || !dropdownsReady || !modelsReady) && attempt < 50) {{
+            setTimeout(function() {{ bindWhenReady(attempt + 1); }}, 100);
+        }}
+    }}
+
+    if (document.readyState === "loading") {{
+        document.addEventListener("DOMContentLoaded", function() {{ bindWhenReady(0); }});
+    }} else {{
+        bindWhenReady(0);
+    }}
+}})();
+</script>
+"""
+    html = '<div class="bokeh-plot">' + bokeh_script + bokeh_div + interaction_script + "</div>"
     return html
 
 
