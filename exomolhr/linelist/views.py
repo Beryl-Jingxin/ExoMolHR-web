@@ -1,4 +1,5 @@
 from decimal import Decimal, ROUND_CEILING, ROUND_FLOOR
+from html import escape
 from pathlib import Path
 from threading import Lock
 from zipfile import ZipFile
@@ -17,9 +18,10 @@ import pandas as pd
 import bokeh.plotting as bp
 from bokeh.plotting import curdoc
 from bokeh.embed import components
-from bokeh.models import ColumnDataSource, Range1d, LogScale, LinearScale, LinearAxis, Select, FixedTicker, BasicTickFormatter, Div, Legend, LegendItem, SaveTool
+from bokeh.models import ColumnDataSource, Range1d, LogScale, LinearScale, LinearAxis, Select, FixedTicker, BasicTickFormatter, Div, SaveTool
 from bokeh.models.callbacks import CustomJS
 from bokeh.models import CustomJSTickFormatter
+from bokeh.events import DocumentReady
 from bokeh.layouts import column, row, Spacer
 # from bokeh.palettes import Bright
 
@@ -128,14 +130,65 @@ def get_plot_colors(count):
     return colors
 
 
-def get_plot_legend_ncols(count):
-    if count <= 0:
-        return 1
-    if count <= 10:
-        return count
-    if count <= 20:
-        return (count + 1) // 2
-    return (count + 2) // 3
+def clean_formula_html(value):
+    if not value:
+        return ""
+    return str(value).replace("_p", "<sup>+</sup>").replace("-", "")
+
+
+def iso_slug_to_formula_html(slug):
+    raw = (slug or "").strip().replace("_p", "+")
+    chunks = []
+    for token in raw.split("-"):
+        m = re.match(r"^(\d+)([A-Za-z]+)(\d*)$", token)
+        if m:
+            mass, elem, count = m.groups()
+            part = f"<sup>{escape(mass)}</sup>{escape(elem)}"
+            if count:
+                part += f"<sub>{escape(count)}</sub>"
+            chunks.append(part)
+        else:
+            token = escape(token).replace("+", "<sup>+</sup>")
+            token = re.sub(r"([A-Za-z\)])(\d+)", r"\1<sub>\2</sub>", token)
+            chunks.append(token)
+    return "".join(chunks)
+
+
+def get_isotopologue_formula_html_by_slug(iso_slugs):
+    iso_html_by_slug = {
+        iso.slug: clean_formula_html(iso.html) if iso.html else iso_slug_to_formula_html(iso.slug)
+        for iso in Isotopologue.objects.filter(slug__in=iso_slugs).only("slug", "html")
+    }
+    return {
+        slug: iso_html_by_slug.get(slug, iso_slug_to_formula_html(slug))
+        for slug in iso_slugs
+    }
+
+
+def make_html_plot_legend(iso_slugs, iso_html_by_slug, color_list, kind):
+    glyph_style = "width:24px;height:4px;border-radius:2px;" if kind == "stick" else "width:10px;height:10px;border-radius:50%;"
+    items = []
+    for idx, slug in enumerate(iso_slugs):
+        label = iso_html_by_slug.get(slug, iso_slug_to_formula_html(slug))
+        color = color_list[idx]
+        items.append(
+            (
+                "<button type='button' data-legend-index='{idx}' "
+                "style='display:inline-flex;align-items:center;gap:6px;margin:4px 8px;padding:2px 4px;"
+                "border:0;background:transparent;color:#333;font:12pt Arial, sans-serif;cursor:pointer;"
+                "white-space:nowrap;line-height:1.25;'>"
+                "<span aria-hidden='true' style='display:inline-block;flex:0 0 auto;background:{color};{glyph_style}'></span>"
+                "<span>{label}</span>"
+                "</button>"
+            ).format(idx=idx, color=color, glyph_style=glyph_style, label=label)
+        )
+    return (
+        "<div class='exomolhr-plot-legend' "
+        "style='display:flex;flex-wrap:wrap;justify-content:center;align-items:center;"
+        "gap:2px 6px;margin:6px 8px 2px;padding:4px 8px;'>"
+        + "".join(items)
+        + "</div>"
+    )
 
 
 def format_plot_range_value(value):
@@ -1112,13 +1165,7 @@ def get_bokeh_html(
         circle_renderers = []
         segment_by_index = {}
         circle_by_index = {}
-        legend_line_proxy_by_index = {}
-        legend_circle_proxy_by_index = {}
         y0_col = "y0_log" if y_axis_type == "log" else "y0_lin"
-        proxy_x0 = min(x_start, x_end)
-        proxy_x1 = proxy_x0 + max(abs(x_end - x_start) * 0.001, 1e-12)
-        proxy_y0 = max(float(Smax), 1e-35) * 10.0
-        proxy_y1 = proxy_y0 * 1.1
         for idx in plot_order:
             seg = f.segment(
                 x0="x", y0=y0_col, x1="x", y1="y",
@@ -1133,85 +1180,89 @@ def get_bokeh_html(
             circle_renderers.append(cir)
             segment_by_index[idx] = seg
             circle_by_index[idx] = cir
-            legend_line_proxy_by_index[idx] = f.quad(
-                left=[proxy_x0], right=[proxy_x1], bottom=[proxy_y0], top=[proxy_y1],
-                fill_color=color_list[idx], line_color=color_list[idx],
-                fill_alpha=1.0, line_alpha=1.0,
-            )
-            legend_circle_proxy_by_index[idx] = f.circle(
-                x=[proxy_x0], y=[proxy_y0],
-                color=color_list[idx], size=8, fill_alpha=1.0, line_alpha=1.0,
-            )
-            legend_line_proxy_by_index[idx].js_on_change(
-                "visible",
-                CustomJS(args=dict(
-                    segment=seg,
-                    circle=cir,
-                    paired_proxy=legend_circle_proxy_by_index[idx],
-                ), code="""
-                    segment.visible = cb_obj.visible;
-                    circle.visible = cb_obj.visible;
-                    paired_proxy.visible = cb_obj.visible;
-                """)
-            )
-            legend_circle_proxy_by_index[idx].js_on_change(
-                "visible",
-                CustomJS(args=dict(
-                    segment=seg,
-                    circle=cir,
-                    paired_proxy=legend_line_proxy_by_index[idx],
-                ), code="""
-                    segment.visible = cb_obj.visible;
-                    circle.visible = cb_obj.visible;
-                    paired_proxy.visible = cb_obj.visible;
-                """)
-            )
+        segments_by_iso_index = [segment_by_index[idx] for idx in range(len(iso_slugs))]
+        circles_by_iso_index = [circle_by_index[idx] for idx in range(len(iso_slugs))]
+        return f, top_ax, segment_renderers, circle_renderers, segments_by_iso_index, circles_by_iso_index, save_tool
 
-        top_legend_items = []
-        full_legend_items = []
-        for idx, slug in enumerate(iso_slugs):
-            top_legend_items.append(LegendItem(
-                label=slug,
-                renderers=[legend_line_proxy_by_index[idx]],
-            ))
-            full_legend_items.append(LegendItem(
-                label=slug,
-                renderers=[legend_circle_proxy_by_index[idx]],
-            ))
-
-        top_legend = Legend(
-            items=top_legend_items,
-            location="center",
-            orientation="horizontal",
-            ncols=get_plot_legend_ncols(len(iso_slugs)),
-            click_policy="hide",
-            glyph_width=25,
-            glyph_height=4,
-            label_height=18,
-            label_text_font_size="12pt",
-            spacing=14,
-            margin=8,
-            padding=8,
-        )
-        full_legend = Legend(
-            items=full_legend_items,
-            location="center",
-            orientation="horizontal",
-            ncols=get_plot_legend_ncols(len(iso_slugs)),
-            click_policy="hide",
-            label_text_font_size="12pt",
-            spacing=14,
-            margin=8,
-            padding=8,
-            visible=False,
-        )
-        f.add_layout(top_legend, "below")
-        f.add_layout(full_legend, "below")
-        return f, top_ax, segment_renderers, circle_renderers, top_legend, full_legend, save_tool
-
-    fig_log, top_axis_log, segments_log, circles_log, top_legend_log, full_legend_log, save_tool_log = make_fig("log")
-    fig_lin, top_axis_lin, segments_lin, circles_lin, top_legend_lin, full_legend_lin, save_tool_lin = make_fig("linear")
+    fig_log, top_axis_log, segments_log, circles_log, segments_by_iso_log, circles_by_iso_log, save_tool_log = make_fig("log")
+    fig_lin, top_axis_lin, segments_lin, circles_lin, segments_by_iso_lin, circles_by_iso_lin, save_tool_lin = make_fig("linear")
     fig_lin.visible = False
+
+    iso_formula_html_by_slug = get_isotopologue_formula_html_by_slug(iso_slugs)
+    top_legend_log = Div(
+        text=make_html_plot_legend(iso_slugs, iso_formula_html_by_slug, color_list, "stick"),
+        sizing_mode="stretch_width",
+        disable_math=True,
+    )
+    full_legend_log = Div(
+        text=make_html_plot_legend(iso_slugs, iso_formula_html_by_slug, color_list, "scatter"),
+        sizing_mode="stretch_width",
+        disable_math=True,
+        visible=False,
+    )
+    top_legend_log.js_on_event(DocumentReady, CustomJS(args=dict(
+        segments_log=segments_by_iso_log,
+        segments_lin=segments_by_iso_lin,
+        circles_log=circles_by_iso_log,
+        circles_lin=circles_by_iso_lin,
+    ), code="""
+        window.exomolhrPlotLegendState = window.exomolhrPlotLegendState || Array(segments_log.length).fill(true);
+
+        function collectRoots() {
+            const roots = [document];
+            const nodes = document.querySelectorAll('*');
+            for (const node of nodes) {
+                if (node.shadowRoot) {
+                    roots.push(node.shadowRoot);
+                }
+            }
+            return roots;
+        }
+
+        function setLegendButtonState(index, visible) {
+            for (const root of collectRoots()) {
+                const buttons = root.querySelectorAll(`[data-legend-index="${index}"]`);
+                for (const button of buttons) {
+                    button.style.opacity = visible ? "1" : "0.35";
+                    button.style.textDecoration = visible ? "none" : "line-through";
+                }
+            }
+        }
+
+        function bindLegendButtons() {
+            for (const root of collectRoots()) {
+                const buttons = root.querySelectorAll("[data-legend-index]");
+                for (const button of buttons) {
+                    if (button.dataset.exomolhrLegendBound === "true") {
+                        continue;
+                    }
+                    button.dataset.exomolhrLegendBound = "true";
+                    button.addEventListener("click", function(event) {
+                        event.preventDefault();
+                        window.exomolhrPlotLegendToggle(Number(button.dataset.legendIndex));
+                    });
+                }
+            }
+        }
+
+        window.exomolhrPlotLegendToggle = function(index) {
+            const visible = !window.exomolhrPlotLegendState[index];
+            window.exomolhrPlotLegendState[index] = visible;
+            const renderers = [
+                segments_log[index], segments_lin[index],
+                circles_log[index], circles_lin[index],
+            ];
+            for (const renderer of renderers) {
+                renderer.visible = visible;
+            }
+            setLegendButtonState(index, visible);
+        };
+
+        bindLegendButtons();
+        for (let index = 0; index < segments_log.length; index++) {
+            setLegendButtonState(index, window.exomolhrPlotLegendState[index]);
+        }
+    """))
 
     # --- Controls ---
     centered_select_stylesheet = """
@@ -1333,8 +1384,8 @@ def get_bokeh_html(
             "<div style='padding:8px 10px;border-radius:6px;background:#fff3cd;"
             "color:#664d03;border:1px solid #ffecb5;font-size:13px;'>"
             f"Full scatter draws all available points up to {FULL_SCATTER_FORCE_LIMIT:,} points per iso. "
-            f"Above {FULL_SCATTER_POINT_LIMIT:,} points per iso it may render slowly; "
-            f"above {FULL_SCATTER_FORCE_LIMIT:,}, that iso is shown with Top-K instead. "
+            f"Above {FULL_SCATTER_POINT_LIMIT:,} points per isotopologue it may render slowly; "
+            f"above {FULL_SCATTER_FORCE_LIMIT:,}, that isotopologue is shown with Top-K instead. "
             "Zoom to a smaller range for true full scatter."
             "</div>"
         ),
@@ -1372,9 +1423,7 @@ def get_bokeh_html(
         circles_log=circles_log,
         circles_lin=circles_lin,
         top_legend_log=top_legend_log,
-        top_legend_lin=top_legend_lin,
         full_legend_log=full_legend_log,
-        full_legend_lin=full_legend_lin,
         save_tool_log=save_tool_log,
         save_tool_lin=save_tool_lin,
         renderer_slugs=renderer_slugs,
@@ -1432,9 +1481,7 @@ def get_bokeh_html(
         save_tool_lin.filename = saveFilename;
 
         top_legend_log.visible = mode === "Top-K Stick Spectra";
-        top_legend_lin.visible = mode === "Top-K Stick Spectra";
         full_legend_log.visible = isFullScatter;
-        full_legend_lin.visible = isFullScatter;
 
         const allSegments = segments_log.concat(segments_lin);
         const allCircles = circles_log.concat(circles_lin);
@@ -1483,7 +1530,7 @@ def get_bokeh_html(
     left_controls = row(x_select, y_select, spacing=12)
     right_controls = row(plot_select, focus_select, spacing=12)
     controls = row(left_controls, Spacer(sizing_mode="stretch_width"), right_controls, sizing_mode="stretch_width")
-    layout = column(controls, full_warning, fig_log, fig_lin, sizing_mode="stretch_width")
+    layout = column(controls, full_warning, fig_log, fig_lin, top_legend_log, full_legend_log, sizing_mode="stretch_width")
 
     bokeh_script, bokeh_div = components(layout)
     html = '<div class="bokeh-plot">' + bokeh_script + bokeh_div + "</div>"
